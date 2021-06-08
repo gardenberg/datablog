@@ -1,4 +1,4 @@
-[build]
+n[build]
 command = "hugo"
 publish = "public"
 [build.environment]

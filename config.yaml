@@ -1,8 +1,8 @@
-baseurl: https://example.com
-title: Hugo Tanka Theme Demo
-author: Nan Xiao
+baseurl: https://nervous-shannon-4b6192.netlify.app/
+title: Suppe og analyse - test
+author: Eivind Hageberg
 canonifyurls: yes
-languagecode: en
+languagecode: no
 theme: hugo-tanka
 enableEmoji: yes
 hasCJKLanguage: no
@@ -30,18 +30,15 @@ markup:
       unsafe: yes
 menu:
   primary:
-    - name: Home
+    - name: Hjem
       url: /
       weight: 1
-    - name: About
+    - name: Om meg
       url: /about/
       weight: 2
     - name: GitHub
-      url: https://github.com/nanxstats
+      url: https://github.com/gardenberg
       weight: 3
-    - name: Twitter
-      url: https://twitter.com/nanxstats
-      weight: 4
-    - name: Subscribe
+    - name: RSS
       url: /index.xml
-      weight: 5
+      weight: 4
