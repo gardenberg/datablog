@@ -1,0 +1,175 @@
+---
+title: Resultater av Eliteserien 2019 - hvem kom nærmest?
+author: Eivind
+date: '2019-12-14'
+slug: resultater-av-eliteserien-2019-hvem-kom-nærmest
+categories:
+  - R
+  - fotball
+tags: []
+---
+
+
+
+<p>Da var Eliteserien over for i år. Hvordan gikk det med <a href="https://suppe-og-analyse.netlify.com/post/eliteserien-2019-hvordan-blir-tabellen-til-slutt/">tippinga</a> fra mars? Da bestemte jeg for å legge gjennomsnittet av oddssidenes tipping og avisenes ekspertkommentarer til grunn.</p>
+<p>Hvordan ser dette ut opp i mot resultatet? Hvordan ble tabellen til slutt? Jo slik:</p>
+<pre class="r"><code>kable(arrange(select(df, Lag, Resultat, MinPrognose = Prognose), Resultat)) </code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Lag</th>
+<th align="right">Resultat</th>
+<th align="right">MinPrognose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Molde</td>
+<td align="right">1</td>
+<td align="right">1.44</td>
+</tr>
+<tr class="even">
+<td align="left">Bodø/Glimt</td>
+<td align="right">2</td>
+<td align="right">10.60</td>
+</tr>
+<tr class="odd">
+<td align="left">Rosenborg</td>
+<td align="right">3</td>
+<td align="right">1.76</td>
+</tr>
+<tr class="even">
+<td align="left">Odd</td>
+<td align="right">4</td>
+<td align="right">8.20</td>
+</tr>
+<tr class="odd">
+<td align="left">Viking</td>
+<td align="right">5</td>
+<td align="right">13.88</td>
+</tr>
+<tr class="even">
+<td align="left">Kristiansund BK</td>
+<td align="right">6</td>
+<td align="right">7.80</td>
+</tr>
+<tr class="odd">
+<td align="left">Haugesund</td>
+<td align="right">7</td>
+<td align="right">8.00</td>
+</tr>
+<tr class="even">
+<td align="left">Stabæk</td>
+<td align="right">8</td>
+<td align="right">12.76</td>
+</tr>
+<tr class="odd">
+<td align="left">Brann</td>
+<td align="right">9</td>
+<td align="right">3.24</td>
+</tr>
+<tr class="even">
+<td align="left">Vålerenga</td>
+<td align="right">10</td>
+<td align="right">5.20</td>
+</tr>
+<tr class="odd">
+<td align="left">Strømsgodset</td>
+<td align="right">11</td>
+<td align="right">10.28</td>
+</tr>
+<tr class="even">
+<td align="left">Sarpsborg 08</td>
+<td align="right">12</td>
+<td align="right">4.44</td>
+</tr>
+<tr class="odd">
+<td align="left">Mjøndalen</td>
+<td align="right">13</td>
+<td align="right">14.52</td>
+</tr>
+<tr class="even">
+<td align="left">Lillestrøm</td>
+<td align="right">14</td>
+<td align="right">8.40</td>
+</tr>
+<tr class="odd">
+<td align="left">Tromsø</td>
+<td align="right">15</td>
+<td align="right">11.28</td>
+</tr>
+<tr class="even">
+<td align="left">Ranheim</td>
+<td align="right">16</td>
+<td align="right">13.08</td>
+</tr>
+</tbody>
+</table>
+<p>Som vi ser av tabellen: ikke veldig nærme - men heller ikke helt tilfeldig.</p>
+<p>Hvordan ser dette ut i forhold til de forskjellige prognosene?</p>
+<pre class="r"><code>temp = gather(df, ID, prognose, Nettavisen:Prognose) %&gt;%
+  mutate(type = ifelse(ID == &quot;Resultat&quot;, &quot;Resultat&quot;, &quot;Prognose&quot;))
+
+ggplot() + 
+  geom_count(data = filter(temp, type == &quot;Prognose&quot;), aes(x = prognose, y = Lag), colour = &quot;grey&quot;) +
+  geom_point(data = filter(temp, type == &quot;Resultat&quot;), aes(x = prognose, y = Lag), colour = &quot;black&quot;) +
+  geom_point(data = filter(temp, ID == &quot;Prognose&quot;), aes(x = prognose, y = Lag), colour = &quot;red&quot;) +
+  labs(x = &quot;Plassering&quot;, y = &quot;Lag&quot;, colour = &quot;Prognose eller resultat?&quot;)</code></pre>
+<p><img src="/post/2019-12-14-resultater-av-eliteserien-2019-hvem-kom-nærmest_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Hvem er nærmest? Vi bruker RMSE som mål, den gir større straff til store feil:</p>
+<pre class="r"><code>#RMSE
+rmse &lt;- function(feil){
+    sqrt(mean(feil^2))
+}
+
+temp = data.frame(ID = as.character(), rmse = as.numeric(), stringsAsFactors = FALSE)
+
+feil = df$Resultat - df$Nettavisen
+temp = bind_rows(temp, data.frame(ID = &quot;Nettavisen&quot;, rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Oddschecker
+temp = bind_rows(temp, data.frame(ID = &quot;Oddschecker&quot;, rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Dagsavisen
+temp = bind_rows(temp, data.frame(ID = &quot;Dagsavisen&quot;, rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Dagbladet
+temp = bind_rows(temp, data.frame(ID = &quot;Dagbladet&quot;, rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Aftenposten
+temp = bind_rows(temp, data.frame(ID = &quot;Aftenposten&quot;, rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Prognose
+temp = bind_rows(temp, data.frame(ID = &quot;MinPrognose&quot;, rmse = rmse(feil), stringsAsFactors = FALSE))
+
+kable(arrange(temp, rmse))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">ID</th>
+<th align="right">rmse</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Aftenposten</td>
+<td align="right">4.500000</td>
+</tr>
+<tr class="even">
+<td align="left">Dagsavisen</td>
+<td align="right">4.663690</td>
+</tr>
+<tr class="odd">
+<td align="left">MinPrognose</td>
+<td align="right">4.802395</td>
+</tr>
+<tr class="even">
+<td align="left">Dagbladet</td>
+<td align="right">5.267827</td>
+</tr>
+<tr class="odd">
+<td align="left">Oddschecker</td>
+<td align="right">5.408327</td>
+</tr>
+<tr class="even">
+<td align="left">Nettavisen</td>
+<td align="right">5.488625</td>
+</tr>
+</tbody>
+</table>
+<p>Aftenposten var den beste ekspertpanelet her, fulgt av Dagsavisen. Dagbladet, Oddsen og Nettavisen gjør det alle dårligere. Men forskjellene er ikke veldig store.</p>

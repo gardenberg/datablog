@@ -1,0 +1,71 @@
+---
+title: Data science på norsk?
+author: Eivind
+date: '2019-04-05'
+slug: data-science-på-norsk
+categories:
+  - datascience
+tags:
+  - datascience
+---
+
+```{r, include = FALSE}
+library(here)
+library(tidyverse)
+
+theme_set(theme_minimal())
+```
+
+"Data science" eller datavitenskap er den nye vinen. Eller, det skulle man i hvert fall tro når til og med staten arrangerer [fagforum](https://www.difi.no/arrangement/2019-04-05/fagforum-kunstig-intelligensdata-science-i-offentlig-sektor) for "kunstig intelligens og data science". Men hva er det? Hva er det på norsk? Og er det viktig?
+
+#Hva er datavitenskap?
+For det aller første, så er det åpenbart et engelsk begrep som klinger dårlig i norske ører. Jeg har imidlertid ikke funnet noen god norsk oversettelse så langt. Avanserte analyser høres et hakk bedre ut, men mulig det ikke gir helt de riktige konnotasjonene enda.
+
+Framveksten av datavitenskap (i Norge) henger tett sammen med framveksten av kunstig intelligens.
+
+```{r}
+#sett inn figuren fra disse dataene
+#https://trends.google.com/trends/explore?date=all&geo=NO&q=data%20science,Kunstig%20intelligens
+df = read.csv(here("content","data","google_searches_ds_ai.csv"), skip = 2, stringsAsFactors = FALSE, fileEncoding = "UTF-8")
+
+names(df) = c("dato", "datascience", "kunstig intelligens")
+df = gather(df, searchterm, verdi, datascience:`kunstig intelligens`)
+df$dato = as.Date(paste0(df$dato,"-","01"), "%Y-%m-%d") #aner ikke hvorfor jeg må legge til en dag, men det fungerer
+
+qplot(data = df, x = dato, y = verdi, colour = searchterm, group = searchterm, geom = "line")+
+  labs(colour = "søkeord", title ="Google-søk etter datavitenskap og AI følger hverandre tett")
+
+```
+
+
+En måte å framstille dette på ble laget allerede i 2010 av [Drew Conway](http://drewconway.com/zia/2013/3/26/the-data-science-venn-diagram), i det etterhvert MYE delte data science vendiagrammet:
+
+![datascience venn diagram](/post/2019-04-05-data-science-på-norsk_files/Data_Science_VD.png)
+
+Det er altså tre områder som må kombineres i datavitenskap: teknisk kunnskap, statistikk og domeneekspertise. Conway selv har seinere sagt at han ikke tror på enhjørningen - den perfekte utøveren som er ekspert på alle tre. Snarere handler det om å sette sammen et team som er gode på alle områdene. Men den enkelte bør forstå viktigheten av de andre områdene. I hodet mitt er følgende inndeling nyttig:
+
+1. analyser med avanserte metoder. Men også standard-analyser kan bruke avanserte metoder.
+2. utvikling av digitale tjenester som bruker kvantitative metoder for å klassifisere eller predikere, og som kjører i "produksjon".
+
+##Littebitt hype...?
+
+Gartner har utvikla en "hype cycle", som ([i følge dem selv](https://www.gartner.com/en/research/methodologies/gartner-hype-cycle)) skal fortelle noe om fasene en teknologi o.l. går igjennom: innovasjon, for høye forventninger, desillusjon, opplysning og produktivt platå. For data science ser det slik ut:
+
+![Gartner hype cycle - from trigger through peak expectations, trough of disillusionment, onto the plateau of realism](/post/2019-04-05-data-science-på-norsk_files/gartner_hype_cycle.png)
+
+Hvor er vi nå? Antakeligvis på hype-stedet fortsatt, i hvert fall i amerikansk forstand. Men hva med Norge? I 2017 starta UMB på Ås som første norske universitet en master i datavitenskap. Ser du på et [google-søk](https://www.google.com/search?q=%22data+science%22&client=firefox-b-d&tbm=nws&source=lnt&tbs=lr:lang_1no&lr=lang_no&sa=X&ved=0ahUKEwjq1_r4ocvhAhVusYsKHQNkDRcQpwUIIA&biw=1536&bih=728&dpr=1.25) også her, ser det ut til å være godt diskutert i diverse medier og bransjeblader de siste årene.
+
+#Trender i utlysninger?
+
+Men ta helst ikke mitt ord for det - se på noen data. NAV har publisert historiske stillingsutlysninger, med både vasket stillingstittel, og de 4000 første tegnene av stillingsbeskrivelsen. Strengt tatt er disse også tilgjengelig gjennom et API, men det har jeg sålangt ikke helt funnet ut av (dokumentasjonen sender meg [hit](https://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api).
+
+```{r}
+# henter data fra https://data.nav.no/dataset/utlysningstekster-ledige-stillinger-historikk/resource/882e3e0f-cd3c-4d3a-8072-be7ba7b3d272
+
+df = read.csv2("https://data.nav.no/dataset/408fc52c-b50e-4ee7-a620-305eaa5d56e7/resource/882e3e0f-cd3c-4d3a-8072-be7ba7b3d272/download/stillingstekster-2018.csv", stringsAsFactors = FALSE, header = TRUE, fileEncoding = "UTF-8")
+
+temp = filter(df, grepl("data science", Stillingsbeskrivelse.vasket))
+str(temp)
+```
+
+142 stillinger av 212 011? Ikke veldig hype - men heller ikke veldig grundig søkt i teksten.

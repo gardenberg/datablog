@@ -1,0 +1,79 @@
+---
+title: 'Eliteserien 2019 - hvordan blir tabellen til slutt?'
+author: Eivind
+date: '2019-03-31'
+slug: 'eliteserien-2019-hvordan-blir-tabellen-til-slutt'
+categories:
+  - R
+tags:
+  - fotball
+  - R
+---
+
+Hvert år arrangerer noen på kontoret en Eliteserie-tippeligakonkurranse. Jeg veit lite om fotball-lagene, og har aldri tippet noe særlig - men pleier å gjøre det greit, basert på andres harde arbeid: eksperter og odds.
+
+Her bruker jeg tidyverse, knitr og here-pakka, og en egenprodusert tabell over ulike tips til tabellplasseringer. Her har jeg også lagt på et superenkelt gjennomsnitt av lagene, for å ha noe å sortere dem etter.
+
+```{r, echo = FALSE}
+#biblioteker
+library(here)
+library(knitr)
+suppressPackageStartupMessages(library(tidyverse))
+
+#data
+df = read.csv2(here("content/data/tippeliga_2019.csv"),stringsAsFactors = FALSE, na.strings = "", nrows = 16) %>%
+  select(., -UniBet, - NordicBet)
+
+numeric_vars = names(df)[2:6]
+
+df = mutate(df, gjennomsnitt = rowMeans(select(df,numeric_vars),na.rm=TRUE)) %>%
+  arrange(gjennomsnitt)
+
+kable(df)
+```
+
+Kilder: 
+ [NordicBet](https://www.nordicbet.com/no/odds#?cat=&reg=&sc=6054)
+- [Nettavisen](https://www.nettavisen.no/sportspill/her-er-nettavisens-tabelltips-for-eliteserien-2019/3423620404.html)
+- [Tidens Krav](https://www.tk.no/sporten/fotball/eliteserien/plasserer-kbk-midt-pa-2019-tabellen/s/5-51-608359)
+- [Oddschecker](https://www.oddschecker.com/football/norway/eliteserien/norwegian-eliteserien/winner)
+- [Dagsavisen](https://www.dagsavisen.no/sport/slik-ender-eliteserien-kanskje-1.1457870)
+- [Dagbladet](https://www.dagbladet.no/sport/dagbladets-tabelltips-slik-ender-eliteserien/70922152)
+- [Aftenposten](https://www.aftenposten.no/100Sport/fotball/Bare-n-av-fem-eksperter-tror-pa-RBK-gull---I-dag-er-de-ikke-i-narheten-av-topp-tre-271547b.html).
+
+Aftenposten-plasseringa er litt annerledes enn de øvrige, ettersom de har spurt fem eksperter om topp tre og bunn tre. Jeg har bare tatt gjennomsnittene av dette.
+
+I en ideell verden skulle jeg også gjerne hatt med lagenes budsjetter. Det har jeg imidlertid ikke klart å skrape sammen, så det får være en god ide til seinere.
+
+En måte å vise plasseringene på, er med en fargelagt tabell. Her ser vi enklere enn med de rene tallene at det er nokenlunde stor enighet om de øverste fire-fem lagene, og de fire-fem nederste. Hvilke lag som blir plassert hvor blant de seks i midten varierer imidlertid mer.  
+
+```{r}
+#eksperiment med en heatmap-table
+temp = gather(df,kilde,plassering,Nettavisen:gjennomsnitt)
+
+ggplot(data = temp, aes(x=as.factor(kilde), y = fct_reorder(as.factor(Lag), plassering, .fun = mean, .desc = TRUE)))+
+  geom_tile(aes(fill = plassering))+
+  labs(x = "Kilde", y = "Lag", title = "Molde og Rosenborg i topp, Mjøndalen og Viking i bunn")+
+  scale_fill_gradient2(low = "steelblue", mid = "grey", high = "orange", midpoint = 8)
+```
+
+Her har jeg altså 16 lag med fem tips per lag. Varmekartet gir et raskt overblikk, menen ganske diffus oversikt over de faktiske spredningene for de enkelte lagene. 
+
+```{r}
+ggplot(data = filter(temp, kilde != "gjennomsnitt"), aes(x = fct_reorder(as.factor(Lag), plassering, .fun = mean, .desc = TRUE), y = plassering)) + 
+  #her bruker vi et boksplot for å vise variasjonen i plasseringer for hvert enkelt lag, men gjør det gjennomsiktig
+  geom_boxplot(alpha=0) +
+  #det er heller ikke flere punkter for hvert enkelt lag enn at en kan vise alle.
+  geom_jitter(color="steelblue",alpha=0.3) +
+  labs(x = "Lag", y = "Plassering", title = "Stor variasjon i tips for lag midt på tabellen", subtitle = "Større enighet om topp og bunn") + 
+  coord_flip()
+```
+
+Her ser vi tydeligere at konsensusen er størst om de øverste lagene. De lavere lagene på den nedre halvdelen av tabellen har større spredning i tabellposisjoner. Det ser en av spredningen på punktene, og størrelsen på boksene. Særlig Strømsgodset splitter folk.
+
+Boksplottene viser medianen som midtpunkt. Her får en fram at Ranheim havner på kvalifiseringsplass om en legger gjennomsnitt til grunn, fordi en av ekspertene har svært lave forventninger til laget. Medianen legger dem imidlertid på fjerde siste plass, og lar Stabøk gå ned i stedet. Er det mer fornuftig å la ekstre stemmer telle likt, eller skal en heller legge vekt på konsensuspunktet? 
+
+...
+
+Jeg har ikke den fjerneste anelse. Da velger jeg det enkleste, og går for gjennomsnittet som mitt innspill til årets tippekonkurranse. 
+

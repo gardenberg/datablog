@@ -1,0 +1,306 @@
+---
+title: Hvor like er to dataserier?
+author: Eivind
+date: '2019-09-17'
+slug: hvor-like-er-to-dataserier
+categories:
+  - metode
+  - R
+tags: []
+---
+
+__Hva handler denne artikkelen om?__ _En kikk på noen ulike teknikker for å sammenlikne variabler/caser, når du vil vite hvor god prognosa di var_
+
+Hva er den beste måte å sammenlikne dataserier på?
+
+Som eksempel lager jeg meg et datasett fra en prognosekonkurranse, der 10 personer har forsøkt å gjette på valgresultatet til 10 partier. Jeg har også resultatet - og to spørsmål:
+
+- Hvor like er folk?
+- Hvem er nærmest fasiten? Hvem hadde rett? Antakeligvis er tilfeldig tallgenerering ganske langt fra fasiten - men teknikkene kan brukes også på faktiske bidrag.
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+library(broom)
+library(here)
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+
+#data
+resultatliste = data.frame()
+
+#lite eksperiment med å generere tilfeldige valgresultater
+rand_nr = function(a, b, n, k){
+  #finner n tilfeldige heltall mellom a og b, som summerer til k
+  while(TRUE){
+    x = sample(1:(k - n*a), n - 1, replace = TRUE)
+    x = sort(x)
+    x = c(x, k-n*a) - c(0, x)
+    if(max(x) <= b-a) {return(a+x)}
+  }
+}
+
+test_df = data.frame(parti = c("Rødt", "SV", "Ap", "Sp", "MDG", "KrF", "V", "H", "FrP", "Andre"),
+                     resultat = c(0.038, 0.061, 0.248, 0.144, 0.068, 0.04, 0.039, 0.201, 0.082, 0.079)
+                     )
+test_df$resultat = test_df$resultat*100
+
+for(i in 1:10){
+  temp = data.frame(deltaker = rand_nr(0, 30, 10, 100))
+  names(temp) = paste0("deltaker_", i)
+  test_df = bind_cols(test_df, temp)
+}
+
+df = test_df
+
+```
+
+#Hvor nærme var folk?
+
+##Rein visuell inspeksjon
+
+```{r, echo = FALSE}
+knitr::kable(df, format.args = list(decimal.mark = ","))
+```
+
+Noen ganske utenomjordiske gjettinger her, som forventa - men også ganske vanskelig å si hvilken av dem som har gjort det minst ille relativt til valgresultatet i den venstre kolonna. 
+
+En bedre måte å vise det på er grafisk med en graf:
+
+```{r}
+temp = gather(df, person, prognose, resultat:deltaker_10) %>%
+  mutate(type = ifelse(person == "resultat", "resultat", "prognose"))
+
+ggplot() + 
+  geom_point(data = filter(temp, type == "resultat"), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = "black") +
+  labs(x = "Oppslutning", y = "Parti", colour = "Prognose eller resultat?")
+```
+
+Aller først ser vi på de faktiske valgresultatene. Ap er størst, fulgt av Høyre og Senterpartiet. FrP er ganske små, og bolken "Andre" er temmelig svær. Rødt er minst, men ikke langt unna Venstre og KrF.
+
+Hva så når vi legger på prognosene?
+
+```{r}
+ggplot() + 
+  geom_point(data = filter(temp, type == "prognose"), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = "grey") +
+  geom_point(data = filter(temp, type == "resultat"), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = "black") +
+  labs(x = "Oppslutning", y = "Parti", colour = "Prognose eller resultat?")
+
+```
+
+Skikkelig tilfeldig spredning utover! Allikevel ser det ut til å være en del overplotting - det er få av linjene som har 10 hele grå punkter. Dermed lønner det seg å bruke en anne geome - en som teller opp litt. Små prikker er en observasjon, medium to og de største er tre observasjoner. 
+
+```{r}
+ggplot() + 
+  geom_count(data = filter(temp, type == "prognose"), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = "grey", show.legend = FALSE) +
+  geom_point(data = filter(temp, type == "resultat"), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = "black") +
+  labs(x = "Oppslutning", y = "Parti", colour = "Prognose eller resultat?")
+```
+
+Vanskelig - for ikke å si umulig -å si med ett blikk hvem av de ti seriene som er nærmest fasiten, totalt sett. Vi trenger ett mål. Her går jeg igjennom:
+
+- Evklidiansk distanse
+- Korrelasjonsmatrise
+- R2
+- RMSE
+- MAE
+
+##Euklidiansk distanse
+Evklidiansk distanse er et fancy navn på avstand i et flatt plan mellom to punkter. For avstanden mellom to vektorer (eller to variabler) er denne definert som den kvardratroten av den kvadrerte forskjellen mellom punktene i de to seriene. Hvorfor kvadrere? Fordi summen av forskjeller mellom to serier ikke alltid er informativt, hvis negative og positive forskjeller nuller hverandre ut. 
+
+Lav avstand er bra, stor avstand er dårlig:
+
+```{r}
+temp = t(select(df, -parti))
+evklid = dist(temp)
+print(evklid, digits = 1)
+```
+
+Ut ifra dette målet ser vi at deltaker_4 var nærmest resultatet, fulgt av deltaker 1 og 3. 
+
+Hvis vi var interessert i alle forskjellene mellom alle, kunne dette vært visualisert med ett heatmap. Men det er vi ikke - vi er kun interessert i forskjellen mellom deltakerne og det faktiske resultatet.
+
+```{r}
+temp = dist(t(select(df, -parti)))
+temp = tidy(temp) %>%
+  filter(. , item2 == "resultat")
+
+ggplot(data = temp) + 
+  geom_col(aes(x = fct_reorder(item1, distance), y = distance)) +
+  labs(x = "Hvor langt unna fasiten?", y = "Avstand")
+
+resultatliste = select(temp, person = item1, evklid = distance)
+```
+
+##Korrelasjon (Pearson)
+Men evklidiansk distanse er ikke det eneste målet - vi har også klassikeren korrelasjon. Korrelasjon er ikke veldig ulikt et avstandsmål, men mens evklidiansk avstand forutsetter at de to vektorene (eller variablene) X og Y er på samme skala, skalerer korrelasjon (Pearsons, i dette tilfellet) først med standardavviket til X og Y. Pearson er i bunn og grunn et gjennomsnittlig produkt av x og Y.
+
+```{r}
+temp = select(df, -parti)
+korr_matrise = cor(temp)
+
+temp = data.frame(korr_matrise) %>%
+  rownames_to_column(., var = "id2") %>%
+  gather(., "id1", "korrelasjon", resultat:deltaker_10) %>%
+  filter(., id1 == "resultat", id2 != "resultat")
+
+ggplot(data = temp) + 
+  geom_col(aes(x = fct_reorder(id2, korrelasjon), y = korrelasjon)) +
+  labs(x = "Hvor langt unna fasiten?", y = "Korrelasjon")
+```
+
+Deltaker_4 og deltaker_1 er fortsatt nærmest. Her ser vi faktisk at deltaker_6 og deltaker_8 har en betydelig negativ korrelasjon. 
+
+##Forklart variasjon - R2
+Her brukes også kvadrert R som et mål på forklart variasjon. Dette er jo bare den kvadrerte korrelasjonskoeffisienten fra Pearsons over, og rangeringa blir dermed ikke annerledes. Men merk! Her blir det en liten feil. Over så vi negative korrelasjoner. I tilfellet valgresultat er ikke det ønskelig - det betyr jo at når deltakeren har gjettet høyere, så har resultatet blitt lavere. I matematisk forstand kan dette fortsatt forklare variasjon, men ikke i noen meningsfull form her.
+
+```{r}
+temp$r.kvadrert = temp$korrelasjon^2
+
+ggplot(data = temp) + 
+  geom_col(aes(x = fct_reorder(id2, r.kvadrert), y = r.kvadrert)) +
+  labs(x = "Hvor langt unna fasiten?", y = "Forklart variasjon")
+
+resultatliste = left_join(resultatliste, select(temp, -id1), by = c("person" = "id2"))
+
+```
+
+Deltaker_4 har i hvert fall klart å forklare noe av variasjonen i de faktiske valgresultatene.
+
+##Vanlige prognosemål - Root mean square error (RMSE) og Mean average error (MAE)
+RMSE gir større straff til store feil: hvis det å ta feil med 10 er mer enn dobbelt så ille som å ta feil med 5, så er RMSE riktig mål. Hvis det å ta feil med 10 er akkurat dobbelt så ille som å ta feil med 5, så er MAE riktigere.
+
+```{r}
+#RMSE
+rmse <- function(feil){
+    sqrt(mean(feil^2))
+}
+ 
+#MAE
+mae <- function(feil){
+    mean(abs(feil))
+}
+```
+
+Sjølve utregninga skjuler jeg - den er temmelig stygg, ettersom kopiering gikk raskere enn funksjoner.
+
+```{r, include = FALSE}
+#clunky utregning - kopipasta går raskere enn funksjoner her
+temp = data.frame(person = as.character(), rmse = as.numeric(), mae = as.numeric(), stringsAsFactors = FALSE)
+feil = df$resultat - df$deltaker_1
+temp = bind_rows(temp, data.frame(person = "deltaker_1", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_2
+temp = bind_rows(temp, data.frame(person = "deltaker_2", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_3
+temp = bind_rows(temp, data.frame(person = "deltaker_3", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_4
+temp = bind_rows(temp, data.frame(person = "deltaker_4", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_5
+temp = bind_rows(temp, data.frame(person = "deltaker_5", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_6
+temp = bind_rows(temp, data.frame(person = "deltaker_6", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_7
+temp = bind_rows(temp, data.frame(person = "deltaker_7", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_8
+temp = bind_rows(temp, data.frame(person = "deltaker_8", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_9
+temp = bind_rows(temp, data.frame(person = "deltaker_9", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+feil = df$resultat - df$deltaker_10
+temp = bind_rows(temp, data.frame(person = "deltaker_10", rmse = rmse(feil), mae = mae(feil), stringsAsFactors = FALSE))
+```
+
+
+```{r}
+qplot(data = temp, x = fct_reorder(person, rmse), y = rmse, geom = "col") + 
+  labs(x = "Person", y = "RMSE")
+
+qplot(data = temp, x = fct_reorder(person, mae), y = mae, geom = "col") + 
+  labs(x = "Person", y = "MAE")
+
+resultatliste = left_join(resultatliste, temp)
+```
+
+
+##Oppsummering
+
+Så for å oppsummere, hvem var best? Ut ifra de ulike målene vi har sett her, ser resultatene relativt entydige ut: deltaker_4 har en lavere evklidiansk avstand til resultatet, har en høyere korrelasjon, en høyere forklart variasjon, en lavere RMSE og en lavere MAE.
+
+```{r}
+knitr::kable(arrange(resultatliste, evklid), digits = 1)
+```
+
+Hvordan ser dette ut i plottet vårt fra over?
+
+```{r}
+temp = gather(df, person, prognose, resultat:deltaker_10) %>%
+  mutate(type = ifelse(person == "resultat", "resultat", "prognose"))
+
+ggplot() + 
+  geom_count(data = filter(temp, type == "prognose"), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = "grey", show.legend = FALSE) +
+  geom_point(data = filter(temp, type == "resultat"), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = "black") +
+  geom_point(data = filter(temp, person == "deltaker_4"), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = "red") +
+  labs(x = "Oppslutning", y = "Parti", colour = "Prognose eller resultat?")
+```
+
+##Men hvilke valgresultater var de ulike deltakerne nærmest?
+En måte å snu på dette på, er ved å finne ut hvilke faktiske valgresultater de ulike deltakerne var nærmest. Valgresultatene hentes fra [valgresultat.no](https://valgresultat.no/eksport-av-valgresultater?type=ko&year=2019).
+
+Etter litt bearbeiding får jeg denne tabellen:
+
+
+```{r, include = FALSE}
+valgresultater_kommune <- read_delim(here("content/data/2019-09-15_partifordeling_2_ko_2019.csv"), ";", 
+                                     escape_double = FALSE, locale = locale(decimal_mark = ",",
+                                                                            grouping_mark = "|"), 
+                                     trim_ws = TRUE)
+
+#databearbeiding: beholder kun oppslutninga, lager en enkelt kommunenavn-variabel, slår sammen alle andre partier, og koder om faktornivåaene, summerer så de andre partiene, og sprer den ut som en matrise.
+df_valgresultater = select(valgresultater_kommune, Kommunenummer, Kommunenavn, Partikode, oppslutning = `Oppslutning prosentvis`) %>%
+  mutate(., kommune = paste0(Kommunenummer, "_", Kommunenavn)) %>%
+  select(., kommune, Partikode, oppslutning) %>%
+  mutate(., oppslutning = oppslutning/100) %>%
+  mutate(., parti = fct_lump(Partikode, n = 10, other_level = "Andre")) %>%
+  mutate(., parti = fct_recode(parti,
+                               "Ap" = "A",
+                               "FrP" = "FRP",
+                               "Høyre" = "H",
+                               "KrF" = "KRF",
+                               "MDG" = "MDG",
+                               "Rødt" = "RØDT",
+                               "Sp" = "SP",
+                               "SV" = "SV",
+                               "Venstre" = "V",
+                               "Andre" = "Andre",
+                               "Blanke" = "BLANKE"
+                               )) %>%
+  group_by(., kommune, parti) %>%
+  summarise(., oppslutning = sum(oppslutning, na.rm=TRUE)) %>%
+  spread(., kommune, oppslutning, fill = NA)
+
+names(df)[1] = "parti"
+
+df_full = left_join(df, df_valgresultater)
+```
+
+
+```{r,  warning = FALSE, message = FALSE, echo = FALSE}
+temp = dist(t(select(df_full, -parti)), diag = TRUE, upper = TRUE)
+temp = tidy(temp) 
+navn = paste0(rep("deltaker_", 10), seq(1, 10, by = 1))
+temp = filter(temp, !(item2 %in% navn))
+
+resultat = data.frame()
+
+for(i in 1:length(navn)){
+  tabell = filter(temp, item1 == navn[i])
+  tabell = arrange(tabell, distance)
+#  resultat = bind_rows(resultat, tabell[1,])
+  resultat = bind_rows(resultat, top_n(tabell, -1))
+}
+
+names(resultat) = c("Deltaker", "Nærmeste kommune", "Avstand")
+knitr::kable(resultat, digits = 1)
+```
+
+Deltaker 3, 4 og 9 har lavest avstand til valgresultatet for hele landet. Avstanden er imidlertid ikke spesielt lav. 1, 2 og 5 ligger nærmest Flå. Deltaker 10 er veldig overraskende nærme tre små kommuner. 

@@ -1,0 +1,142 @@
+---
+title: Visualiere antall og sammenlikne kategorier med ggplot2
+author: Eivind
+date: '2019-04-23'
+slug: ggplot2-antall-og-sammenlikning-av-kategorier
+categories:
+  - visualisering
+tags:
+  - R
+  - ggplot2
+---
+
+__Hva handler denne artikkelen om?__ _Hvordan visualisere antall og sammenlikne kategorier med ggplot2 i R, ved hjelp av søylediagram og punktdiagram_
+
+Vi har [tidligere sett på](https://suppe-og-analyse.netlify.com/post/grunnleggende-ggplot2/) hvordan andeler bør visualiseres. Denne gangen skal vi se på noe enda mer grunnleggende - antall. Veldig ofte er vi interessert i et enkelt tall eller en observasjon, for eksempel et gjennomsnitt eller en maksverdi. Vi ønsker også å sammenlikne denne verdien på tvers av ulike kategorier, som kjønn, typer biler eller geografisk enhet. 
+
+Det er i hovedsak to standard måter å visualisere denne typen data på: stolpediagram (eller søylediagram), og punktdiagram. 
+
+```{r,echo=FALSE}
+#pakker
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(PxWebApiData))
+#library(colorspace)
+#library(stringr)
+
+#valg - et kjekt standard-tema for ggplot2
+theme_set(theme_minimal())
+
+#seed for pseudo-tilfeldige tall
+set.seed(1106)
+
+```
+
+###Eksempeldata fra SSBs åpne API.
+Også denne gangen bruker vi eksempeldata fra SSB. Ut ifra publiseringsoversikten ser jeg at det nylig er lagt ut kulturstatistikk, også dette fra KOSTRA. Besøk på folkebibliotek i landets kommuner fra 2015 til 2018 kan kanskje være interessant.
+
+```{r}
+alle_data = ApiData("https://data.ssb.no/api/v0/no/table/12060",
+             KOKkommuneregion0000 = TRUE,
+             ContentsCode = "KOSbesokbiblinnb0000",
+             Tid = TRUE
+)
+
+#ApiData() returnerer både koder og menneskelesbar tekst, jeg går for tekst denne gangen
+df <- alle_data[[1]] %>%
+  select(.,-statistikkvariabel) #filtrerer ut unødvendig info
+```
+
+Det viser seg at 2018-tallene er tomme, så vi må begrense oss til 2015-2017.
+
+## Stolpediagram / søylediagram
+
+Disse figurene er superenkle. For mange er dette standard-diagrammet en tenker på, når en tenker på en graf. De er lettvinte å lage, og ofte lette å forstå - for svært mange. __Men:__ hvis kakediagram er mer nyttig enn ryktet tilsier, så er søyler mindre nyttige en ryktet. Mer om det om litt.
+
+Ggplot2 har to geoms for søylediagram: geom_bar og geom_col. geom_col er for bruk når du har tallet som skal mappes, mens geom_bar inkluderer en beregning.
+
+Med geom_col kan vi se nærmere på de ti stedene med de høyeste besøkstallene (per innbygger) i 2017. 
+
+```{r}
+temp = filter(df, `år`=="2017") %>%
+  arrange(., desc(value)) %>%
+  slice(., 1:10) %>%
+  mutate(., region = as.factor(region), region = fct_reorder(region, value))
+
+ggplot(data = temp, aes(x = region, y = value))+
+  geom_col() +
+  coord_flip() + 
+  labs(title ="Lesehestene i Stjørdal besøkte folkebiblioteket mest", subtitle ="I gjennomsnitt 24 ganger i 2017", x = "Antall besøk per innbygger", y = "Kommune")
+```
+
+Stjørdal kommune har altså flest besøk i folkebiblioteket per innbygger, med 24 besøk i 2017.
+
+- Søylediagram må alltid starte på 0. Dette er en av få absolutte regler i visualisering av data. Det skyldes at det vi gjør når vi leser et søylediagram, er å se på lengden av diagrammet. Hvis vi skal sammenlikne flere søyler, sammenlikner vi lengder. Hvis vi da starter på noe annet enn 0, får vi feil lengde. R håndterer dette automatisk for oss.
+- Siden diagrammet får litt overplotting, må vi også rotere aksene for å lese alle kommunenavnene.
+- Dataene bør alltid være fornuftig sortert, slik at de er lette for leseren å forstå. Siden dette er en topp-ti-liste, kan vi sortere dem fra stor til liten. Anbefalingen fra Grolemund og Wickhams [R for Data Science](https://r4ds.had.co.nz/factors.html#modifying-factor-order) er å ta kompliserte omorganiseringer ut av ggplot-funksjonen og inn i en egen mutate-funksjon, for å gjøre koden lettere å lese-
+
+Geom_bar er en funksjon som gjør litt beregninger og opptellinger selv. Standardinnstillingen er å telle opp antallet observasjoner for hver x-posisjon - i tilfellet over er det region. Den tar også et vekt-argument, som bestemmer hvor mye hver observasjon skal telle med. Dermed kan vi kjapt se hvem som har størst summert gjennomsnittlig besøk blant de 10 første kommunene (over de fire siste årene)
+
+```{r}
+#geom_bar
+temp = mutate(df, region = as.factor(region)) %>%
+  slice(1:40)
+
+ggplot(data = temp, aes(x = region, weight = value))+
+  geom_bar()
+```
+
+Hva er problemene med søylediagram? De bør først og fremst brukes på ting som gir en meningsfull kumulering, altså slik at de kan stables (som penger): folk oppfatter gjerne ting under toppen av søyla som inkludert i søyla, og ting over søyla som ikke inkludert i søyla. Så hvis en f.eks. skal angi at noe har en presis verdi, og ikke en annen verdi, så er søylediagram uegna. Eksempler kan være persentiler, temperaturer, ikke-lineære verdier (log).
+
+## Punkt-diagram
+Eksempelet over, med flere stablede gjennomsnitt i et søylediagram, er også uegna, ettersom gjennomsnitt i tre ulike år ikke gir mening å kumulere. Løsninga på dette kan være å plotte dem hver for seg - men også et punktdiagram kan hjelpe. Et punkt-diagram erstatter søylen med et punkt på verdien. Det er plasseffektivt, lett å lese og enkelt.
+
+```{r}
+#geom_bar
+temp = mutate(df, region = as.factor(region)) %>%
+  slice(1:40) %>%
+  mutate(., region = fct_reorder(region, value))
+
+ggplot(data = temp, aes(x = region, y = value))+
+  geom_point() + 
+  coord_flip() +
+  labs(title = "Besøk til folkebiblioteket varierer mer mellom kommuner enn over år", x = "Kommune", y = "Antall besøk per innbygger")
+```
+
+Her kommer vi imidlertid også inn på behov for å se på fordelinger og endringer over tid. I det  helt grunnleggende eksempelet har vi bare noen tall vi ønsker å kikke på.
+
+```{r}
+#trekker et tilfeldig utvalg av enheter
+temp = filter(df, `år` == "2017") %>%
+  sample_n(., 15) %>%
+  mutate(., region = as.factor(region), region = fct_reorder(region, value))
+
+#punktdiagram
+ggplot(data = temp) + 
+  geom_point(aes(x = region, y = value)) + 
+  coord_flip() + 
+  labs(title = "Gjennomsnittlige besøk per innbygger i 2017", subtitle = "Tilfeldig utvalgte kommuner", x = "Kommune", y = "Antall besøk per innbygger")
+
+```
+
+Andre tall som lettere lar seg vise med et punktdiagram er logaritmer, eller prosentvise endringer. Et eksempel på en slik størrelse er. "log fold change". Fold change er forholdet mellom startverdi og sluttverdi, som en kan ta log2-av. Tallet en får da vil da vise hvor mye større/mindre sluttverdien er enn startverdien: 1 betyr dobbelt så stor, 2 fire ganger så stort, -1 betyr dobbelt så liten. 
+
+0 er skille mellom økning og nedgang. Når dataene har et så tydelig brudd-punkt, bør det også framgå av visualiseringa. En kan også vurdere å fjerne flere av støttelinjene , som de horisontale.
+
+```{r}
+#beregner logFoldChange fra 2015 til 2017
+#her er jeg implisitt avhengig av sorteringa av dataene som kommer inn. Dårlig praksis.
+temp = filter(df, `år` == "2017"|`år` == "2015") %>%
+  slice(., 1:30) %>%
+  spread(., `år`, value, sep = "_") %>%
+  mutate(., logFoldChange = log2(`år_2017`/`år_2015`)) %>%
+  mutate(., region = as.factor(region), region = fct_reorder(region, logFoldChange))
+
+#punktdiagram
+ggplot(data = temp, aes(x = logFoldChange, y = region)) +
+  geom_point(size = 2) + 
+  geom_vline(xintercept=0) +
+  labs(title = "Hvaler og Råde har størst økning i gjennomsnittlig biblo-besøk", subtitle = "Fra 2015 til 2017", y = "Kommune") +
+  theme(
+	panel.grid.major.y = element_blank()
+	)
+```

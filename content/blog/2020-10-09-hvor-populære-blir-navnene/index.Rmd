@@ -1,0 +1,112 @@
+---
+title: 'Hvor populære blir navnene?'
+author: Eivind
+date: '2020-10-14'
+slug: hvor-populære-blir-navnene
+categories:
+  - statistikk
+tags:
+  - R
+---
+
+__Hva handler dette om?__ _SSBs navnestatistikk er den mest populære statistikken de har. Hvordan ser den ut? Og lar det seg gjøre å lage noen lure framskrivninger for et par navn?_
+
+```{r, include = FALSE}
+library(tidyverse)
+library(here)
+library(prophet)
+
+#settings
+gammel = theme_set(theme_minimal())
+set.seed(1106)
+options(scipen = 100)
+```
+
+# Data
+
+Aller først laster jeg inn data på alle jentenavn på fødte fra 1880 til 2019, fra [SSBs statistikkbank](https://www.ssb.no/statbank/table/10467/tableViewLayout1/).  
+
+```{r}
+#data
+df <- read_delim(here("content/data/navnestatistikk/PersonerProsent.csv"), ";", escape_double = FALSE, 
+                 locale = locale(decimal_mark = ",", grouping_mark = "|", encoding = "ISO-8859-1"),
+                 trim_ws = TRUE, skip = 1, na = c(".", "..")) %>%
+  select(fornavn, år, andel = `Andel av fødte (prosent)`) %>%
+  mutate(., andel = parse_number(andel))
+```
+Dette datasettet har informasjon om andelen av nyfødte som har fått ett av 990 fornavn over 140 år, totalt 138 600 observasjoner. Popularitet er målt med andel, formodentlig andel av alle navn gitt til ei nyfødt jente det året. En rask opptelling viser at andelene innafor hver enkelt år ikke summerer til 100, men mellom 75 % til 95 % over tid. Dette er antakeligvis noe en kan lese mer om hos SSB.
+
+En begrensning med dette, er at det er navn til de som er født i Norge - ikke navn til alle som bor i Norge. 
+
+```{r}
+antall_navn = nrow(distinct(df, fornavn))
+antall_aar = nrow(distinct(df, år))
+
+temp = group_by(df, år) %>%
+  summarise(sum_andel = sum(andel, na.rm = TRUE)) %>%
+  qplot(data = ., x = år, y = sum_andel)
+temp
+
+```
+
+Hva er det som ligger her? Vi ser nærmere på trednene til ti tilfeldig utvalgte navn.
+
+```{r}
+utvalg_av_navn = slice_sample(df, fornavn, n = 10)
+temp = filter(df, fornavn %in% utvalg_av_navn$fornavn)
+
+ggplot(data = temp, aes(x = år, y = andel)) +
+  geom_line() +
+  facet_wrap(vars(fornavn))
+
+```
+Her er det nok litt tilfeldig hva som plukkes ut, så det hadde vært interessant å gjøre dette på en måte som sikra litt mer variasjon i trendene vi kunne se på. 
+
+# Hvor populære er Aurora og Vilde?
+
+```{r}
+ggplot(data = filter(df, fornavn == "Aurora"|fornavn == "Vilde")) +
+  geom_line(aes(x = år, y = andel, colour = fornavn))
+```
+# Prediksjon av trend
+
+En interessant pakke for å framskrive tidsserier er [Prophet](https://facebook.github.io/prophet/docs/quick_start.html#r-api) - Facebooks tidsserie-algoritme. 
+
+```{r}
+#påkrevd dataformat
+df_prophet = filter(df, fornavn == "Aurora") %>%
+  select(ds = år, y = andel) %>%
+  mutate(
+    ds = as.character(ds),
+    ds = as.Date(ds, format = "%Y"))
+
+#modell
+modell = prophet(df_prophet)
+
+framtida = make_future_dataframe(modell, periods = 80, freq = "year")
+df_prediksjon = predict(modell, framtida)
+
+#graf
+plot(modell, df_prediksjon)
+
+```
+
+```{r}
+#påkrevd dataformat
+df_prophet = filter(df, fornavn == "Vilde") %>%
+  select(ds = år, y = andel) %>%
+  mutate(
+    ds = as.character(ds),
+    ds = as.Date(ds, format = "%Y"))
+
+#modell
+modell = prophet(df_prophet)
+
+framtida = make_future_dataframe(modell, periods = 80, freq = "year")
+df_prediksjon = predict(modell, framtida)
+
+#graf
+plot(modell, df_prediksjon)
+```
+
+Dette er en enkel tidsserie. Men det er jo ikke urimelig å forvente at navnetrender er nokenlunde like. Dvs. at en kan lære om trenden til et navn, ved å se på andre.

@@ -1,0 +1,144 @@
+---
+title: Fordelinger og SFO-deltakelse [ggplot2]
+author: Eivind
+date: '2019-08-02'
+slug: fordelinger-og-sfo-deltakelse-ggplot2
+categories:
+  - R
+tags:
+  - R
+  - ssb
+---
+
+__Hva handler denne artikkelen om?__ _Hvordan visualisere fordelinger på tvers av kategorier, og deltakelse i skolefritidsordninga i norske kommuner_
+
+Det har vært en del oppstuss rundt skolefritidsordninga - SFO, eller AKS her i Oslo - de siste dagene. NTNU Samfunnsforskning har levert en evalueringsrapport som i følge NRK peker på [enorme forskjer i pris og tilbud](https://www.nrk.no/troms/enorme-forskjeller-i-pris-og-tilbud-pa-sfo_-_-sann-skal-det-ikke-vaere-1.14643999). Det er særlig en NTB-melding som har blitt trykt opp rundt omkring, i følge med en datavisualisering fra nyhetsgrafikk.no. Den skal være limt inn under.
+
+![Utklipp fra Dagsavisen 2. august 2019](/post/2019-08-02-fordelinger-og-sfo-deltakelse-ggplot2_files/dagsavisen_010819.jpg){width=40% height=40%}
+
+Grafikken har masse informasjon, men er allikevel ikke spesielt informativ. Hvorfor ikke? Etter min mening prøver den å dekke over for mye på en gang. Tittelen antyder at den handler om at flest bybarn bruker SFO. Men figurene viser oss andel barn som bruker SFO etter fylke - og ikke byer vs. ikke-byer. Videre trekker den inn gjennomsnittlig månedspris på fylkesnivå, og de ti dyreste og billigste SFO-kommunene - og hvor disse ligger i landet. Altså heller ikke relatert til overskriften.
+
+Hva ville vært en bedre måte å vise dette på? Ved å angripe det som tittelen sier at grafikken skal si noe om - sammenhengen mellom å bo i by, og å bruke SFO.
+
+Under ser vi kjapt på noen enkle måter å visualisere fordelinger på, ved hjelp av R og GGplot2-biblioteket.
+
+```{r, include = FALSE}
+#pakker
+suppressPackageStartupMessages(library(tidyverse))
+library(PxWebApiData)
+library(here)
+library(ggridges)
+
+
+#valg - et kjekt standard-tema for ggplot2
+theme_set(theme_minimal())
+```
+
+###Datagrunnlaget
+SFO-deltakelse hentes fra SSBs statistikkbank (KOSTRA), tabell 11975. Den gir oss andel av barn fra og med 6 år til og med 9 år som i 2018 brukte kommunal eller privat SFO i en kommune. Dataene hentes fra APIet hos SSB.
+
+Hva vil det si at noen bor i en by? I Norge er det ingen offisiell definisjon av en by - det eneste er en gammel veiledende definisjon fra 1997, som tilsier at en kommune med 5000 innbyggere og "sentrale tjenester" kan kalle seg by. Et mål på hva som er en by finner vi derfor i SSBs [sentralitetsindeks](https://www.ssb.no/befolkning/artikler-og-publikasjoner/ny-sentralitetsindeks-for-kommunene). Denne indeksen sier noe om hvor mange arbeidsplasser og servicetjenester folk i kommunen kan nå med bil på 90 minutter. Dette er målet vårt på hvor urbant du bor.
+
+```{r}
+#SFO
+sfo_data = ApiData("https://data.ssb.no/api/v0/no/table/11975",
+                   KOKkommuneregion0000 = TRUE,
+                   ContentsCode = "KOSandsfo69kp0000",
+                   Tid = "2018"
+                   )
+
+df = sfo_data[[2]] %>%
+  select(., -ContentsCode, -Tid) %>% #fjerner variabler med kun 1 verdi (konstanter)
+  filter(., nchar(KOKkommuneregion0000) == 4) #filtrer ut alle regioner som ikke har 4 karakterer
+
+names(df) = c("knr_2018","value")
+
+#sentralitet
+sentralitet = read.csv2(here("content/data/sentralitet_2018.csv"), stringsAsFactors = FALSE, colClasses = c("character", "integer", "integer"))
+
+sentralitet$sklasse_2018 = factor(sentralitet$sklasse_2018, labels = c("Mest sentral", "2", "3", "4", "5", "Minst sentral"))
+
+df = left_join(df, sentralitet) %>%
+    filter(., is.na(value) == FALSE, is.na(sklasse_2018) == FALSE)
+
+
+```
+
+##En enkel fordeling
+Fordelinger er veldig viktig, og å kikke på dem kan gi mye innsikt. En fordeling gir deg et bilde på om det er feil eller mangler i dataene, om modellering bør ta høyde til spesifikke ting, og til slutt - fordelinger viser et mye bedre bilde enn enkle punkt-oppsummeringer, som gjennomsnitt og standardavvik.
+
+Det er i hovedsak to teknikker som er mye brukt for å vise fordelinger: histogram og "kernel density estimates". __Histogrammet__ er bra for enkle fordelinger. De er intuitive for leseren, og lette å tolke. Men nedsida er at bøtte-klassifiserng har mye å si for hvordan det blir seende ut, og små datamengder kan fort bli seende rart ut. Folk som registrer data har også gjerne preferanser for noen dataverdier. 
+
+- Har du mer enn 150 observasjoner? Bruk bins=100. For mindre n, eksperimenter rundt. 
+- Har du data med naturlige brytninger? Utnytt dem
+- Bruk binwidth, gjerne sammen med center som forteller hva som er midtpunktet for en bøtte.
+
+```{r}
+ggplot(data = df, aes(value)) + 
+  geom_histogram(binwidth = 5, center = 2.5) + 
+  labs(y = "Antall kommuner", x = "Andel barn i SFO", title = "De fleste kommuner har rundt 40 - 60 % deltakelse i SFO")
+```
+
+Det ser altså ut til å være en stor haug med kommuner i midten, og så en del kommuner ute på sidene - ganske så normalfordelt, egentlig.
+
+##Sammenlikne fordelinger
+Hvis en skal sammenlikne om to populasjoner eller måloppnåelser er like, må en sammenlikne fordelinger. Histogram med fasetter er ikke plass-effektive, og får mye akser og linjer fort. Det gjelder særlig med mange grupper for sammenlikning. 
+
+En bruker derfor i stedet et boksplot. Hvis en har mye data, er beeswarm bedre. Hvis en har enda mer data, er violin-plot bedre. Hvis det en sammenlikner over er en ordinal variabel, kan ridgeline-plot være best.
+
+I tilfellet med SFO-dataene er ikke gruppene egentlig så mange, slik at histogrammer kanskje kan være egnet - evt. slektningen "freqpoly". Men som vi kjapt ser, så er det neimen ikke lett å bli spesielt klok av dette. De mest sentrale kommunene ser ut til å ha størst deltakelse i SFO, men det er også på alle måter færrest av disse. Vi trenger et mer relativt mål.
+
+```{r}
+ggplot(data = df, aes(value, colour = sklasse_2018)) + 
+  geom_freqpoly(binwidth = 5, center = 2.5) + 
+  labs(y = "Antall kommuner", x = "Andel barn i SFO", colour = "Sentralitet", title = "Andelen barn i SFO varierer med en kommunes sentralitet")
+```
+
+En mer kompakt måte å vise dette på er da med et boksplott. Relativt gjenkjenbart (selv om en ofte må markere hva som vises - median, grense for første og tredje kvartil - dvs. at 50 % av dataene er innafor boksen), og gir kompakt informasjon. Nedsida er at informasjonen er for kompakt, og viser ikke egentlig fordelinga. En måte å få mer av fordelinga med på, er ved å bruke geom_jitter(). Denne plotter hver enkelt observasjon.
+
+```{r}
+ggplot(data = df, aes(x = sklasse_2018, y = value)) + 
+  geom_jitter(colour = "steelblue", alpha = 0.3) + 
+  geom_boxplot(alpha = 0) + 
+  labs(x = "Sentralitet", y = "Andel barn i SFO", title = "De mest sentrale kommunene har høyere deltakelse i SFO")
+
+```
+
+Denne visualiseringa får også helt tydelig fram at vel er det slik at de mer sentrale kommunene har høyere SFO-deltakelse, men spredninga er også langt større blant de mindre sentrale kommunene.
+
+Beeswarm og violin er ikke spesielt aktuelt for oss - men ridgeline kan være det. Ridgeline passer der en har en ordinal variabel, altså har informasjon om rekkefølge. Farge på biler har ikke en slik sortering - men f.eks. måneder i et år har det, eller sentralitet på en kommune.
+
+Dette er KDE-plot som plottes nærmere enn andre plots. Det gir også svakhetene - de kan overplottes, og kernel-valg er vanskelig når det er mange fordelinger.
+
+```{r}
+ggplot(data = df, aes(x = value, y = sklasse_2018)) + 
+  geom_density_ridges(alpha = 0.7) + 
+  scale_x_continuous(limits = c(0, 100), expand = c(0,0)) + 
+  theme(axis.ticks.y = element_blank()) + 
+  labs(x = "Andel i SFO", y = "Sentralitet")
+```
+
+###Er det en sammenheng mellom sentralitet og SFO-deltakelse?
+
+Sentralitet er også målt som en kontinuerlig variabel hos SSB. Dette gir oss muligheten til å også bruke et scatterplot, og estimere en trendlinje.
+
+```{r}
+ggplot(data = df, aes(x = sindeks_2018, y = value)) + 
+  geom_jitter(alpha = 0.3) + 
+  geom_smooth()
+```
+
+##Hva er anbefalinga her?
+Så hva hadde vært en bedre måte å vise at flere bybarn bruker SFO? Anbefalingen her må være å bruke boksplot-tilnærmingen. Det krever nok god annotering, men det får de allerede til med kartet.
+
+
+```{r}
+ggplot(data = df, aes(x = sklasse_2018, y = value)) + 
+  geom_jitter(colour = "steelblue", alpha = 0.3) + 
+  geom_boxplot(alpha = 0) + 
+  labs(x = "Sentralitet", y = "Andel barn i SFO", title = "Flest bybarn bruker SFO") + 
+  annotate("text", x = 1.5, y = 80, label = "3. kvartil") + 
+  annotate("text", x = 1.5, y = 70, label = "Median") + 
+  annotate("text", x = 1.5, y = 65, label = "1. kvartil")
+```
+

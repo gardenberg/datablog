@@ -1,0 +1,161 @@
+---
+title: 'Hvor stort utvalg trenger utvalgsundersøkelsen din?'
+author: Eivind
+date: '2020-09-06'
+slug: statistisk-utvalg
+categories:
+  - statistikk
+  - R
+tags: []
+---
+
+__Hva handler denne artikkelen om?__ _Hvor store utvalg du trenger for å svare på spørsmål om hele populasjonen - og hvorfor det er viktigere med hvem du spør, enn hvor mange du spør. Hvis du skal undersøke alle landets 356 kommuner, trenger du minst et utvalg på 186 kommuner for å med 95 % sikkerhet si at en andel befinner seg mellom 45 % og 55 %_
+
+```{r, include = FALSE}
+library(tidyverse)
+
+gammel = theme_set(theme_minimal())
+```
+
+# Hva er poenget med å trekke utvalg?
+
+Trekke utvalg er noe du gjør når du trenger et utvalg, og det er dyrt eller dumt å spørre alle i hele populasjonen. Dumt er et upresist begrep, men for eksempel er det å bidra til at respondentene dine går helt lei spørreundersøkelser ikke veldig lurt. Jeg skrev litt mer om det [her](https://suppe-og-analyse.netlify.app/post/grunnleggende-statistiske-slutninger/).
+
+Utvalg kan trekkes på både mer og mindre treffsikre måter. De måtene som er mest akseptert som gode, bygger alle på ulike former for tilfeldighetsutvalg, der alle medlemmer av populasjonen har en sannsynlighet for å bli trukket ut, og den som gjennomfører undersøkelsen holder kontrollen med hva som skjer gjennom hele prosessen. Målet er å få et utvalg som er representativt for hele populasjonen, slik at du gjennom å måle ting ved utvalget kan si noe om hele populasjonen. 
+
+# Hvor stort utvalg trenger du?
+
+Det er et mye stilt spørsmål. I følge boka [Designing Surveys (2014)](https://us.sagepub.com/en-us/nam/designing-surveys/book235701) er det langt viktigere hvem du spør, enn hvor mange. Men vi begynner allikevel i denne enden. 
+
+Generelt sett er et større utvalg stort sett bedre, ettersom et større utvalg betyr mindre utvalgsfeil/utvalgsvariasjon - men bare til et visst punkt! Etter hvert får du avtakende nytte av hver ny person/enhet.
+
+En vanlig måte å sette utvalgsstørrelse for utvalgsundersøkelser, er med en konfidensintervall-tilnærming. En anna tilnærming er gjennom styrkeberegning.
+
+Aller først må du gjøre en del avklaringer: 
+
+1. Populasjonsstørrelse. Hvilken populasjon skal du se på, og hvor stor er den? Dette kan være vanskelig nok i seg selv - for hvordan avgrenser du på en presis og målbar måte f.eks. utenlandsadopterte barn til Norge, personer som ikke forstår beskjeder fra myndighetene, eller land som taper på globalisering av internasjonal handel?
+
+2. Anslag på faktisk populasjonsparameter ($\pi$). Hvor stor andel i befolkningen har egenskapen du ønsker å måle? En mye brukt anslag er 50 % - usikkerheten ved estimatet er størst da, så det vil gi det sikreste antallet på utvalget. 
+
+3. Konfidensnivå. Hvor sikker ønsker du å være på at den faktiske populasjonsparameteret er innafor feilintervallet / konfidensintervallet. Mye brukte sikkerheter er 90 %, 95 % og 99 %. I den faktiske matematikken brukes disse i form av Z-skårer. Gjør konfidensnivået om til en Z-skåre, altså verdier for en standardnormalfordelt variabel. For en normalfordelt variabel, så ligger 
+
+- 90 % av verdiene innafor +/- 1,645 standardavvik fra gjennomsnittet,
+- 95 % av verdiene innafor +/- 1,96 standardavvik fra gjennomsnittet,   
+- 99 % av verdiene +/- 2,576 standardavvik fra gjennomsnittet.
+
+4. Utvalgsfeil/feilmargin - konfidensintervall. Hvor stort vil standardavviket rundt gjennomsnittet i utvalg være? Vil de ligge rundt gjennomsnittet, eller spre seg ut? Det er jo noe du neppe veit før du har gjennomført undersøkelsen, så et trygt valg er et avvik på +/- 5 %.
+
+Når du har dette på plass, kan du beregne utvalgsstørrelse. En mye brukt tilnærming er Cochranes formel: Nødvendig utvalgsstørrelse = ((Z-skår ^ 2) * paramaterestimat * (1 - paramaterestimat)) / feilmargin^2. Det ser veldig ut som en omregning av konfidensintervall-formelen. Merk at populasjonsstørrelsen ikke kommer inn - antallet en trenger å ha i et utvalg avhenger av ønska feilmargin, at parameterestimatet er ca. normalfordelt,  og den faktiske verdien på populasjonsparameteret.
+
+Så hvis du har 
+
+- funnet populasjonen din,
+- antatt parameterestimat på 50 %,
+- valgt 95 % konfidensnivå (1,96 Z-verdi),  
+- valgt  utvalgsfeil på +/- 5 %,
+
+får du følgende regnestykke:
+
+```{r}
+z_verdi = 1.96
+p = 0.5
+feilmargin  = 0.05
+
+utvalgs_str = ((z_verdi^2)*p*(1-p)) / (feilmargin^2)
+utvalgs_str
+
+```
+
+Da trenger du et utvalg på 385 personer (eller enheter), for å med 95 % sannsynlighet kunne si at andelen befinner seg mellom 45 % og 55% i populasjonen. 
+
+Formelen er en omforming av den opprinnelige standardfeil-formelen:
+
+```{r}
+p_hatt = 0.5
+sem = sqrt(p_hatt*(1-p_hatt))/sqrt(385)
+```
+Det gir følgende konfidensintervall:
+
+```{r}
+p_hatt - (sem * 1.96)
+p_hatt + (sem * 1.96)
+```
+
+Denne utvalgsstørrelsen  gjelder imidlertid for store populasjoner. For mindre populasjoner, der vi trekker om lag 10 % eller mer av populasjonen i utvalget vårt, kan vi gjøre en justering, ved hjelp av den faktiske populasjonsstørrelsen.
+
+Den nye utvalgsstørrelsen = anbefalt utvalgsstørrelse fra den opprinnelige formelen, delt på 1 + ((anbefalinga - 1) / populasjonsstørrelse). Så i eksempelet over, hvis populasjonen vår er alle norske kommuner (i skrivende stund 356 stk), blir utregninga slik:
+
+```{r}
+pop_str = 356
+
+korrigert_utvalgsstr = utvalgs_str / (1 + ((utvalgs_str - 1) / pop_str))
+korrigert_utvalgsstr
+```
+
+For å si at en estimert andel med 95 % sannsynlighet ligger +/- 5 prosentpoeng rundt andelen i utvalget, holder det med et utvalg på 186 kommuner. 
+
+Hvordan ser dette ut mer generelt? Vi generer noe data, og plotter den korrigerte nødvendige utvalgsstørrelsen mot størrelsen på populasjonen:
+
+```{r, echo = FALSE}
+
+vek_popstr = 1:1000
+vek_korrigert_utvalgsstr = round(utvalgs_str / (1 + ((utvalgs_str - 1) / vek_popstr)))
+
+temp = data.frame(vek_popstr, vek_korrigert_utvalgsstr)
+
+ggplot(data = temp) +
+  geom_line(aes(x = vek_popstr, y = vek_korrigert_utvalgsstr)) +
+  labs(x = "Populasjonsstørrelse", y = "Korrigert utvalgsstørrelse", title = "Sammenheng mellom populasjonsstørrelse og nødvendig utvalgsstørrelse", subtitle = "Korrigert for små populasjoner, linje på N = 356") +
+  scale_y_continuous(breaks = seq(0, 300, 50), limits = c(0, 300)) +
+  geom_vline(aes(xintercept = 356))
+```
+
+*Hva hvis jeg skal gjøre en undersøkelse for å estimere et gjennomsnitt, ikke en andel?* Framgangsmåten er ganske lik:
+
+1. Finn populasjonen din. 
+2. Gjør et anslag på standardavviket i populasjonen. Hvor stort er det gjennomsnittlige avviket +/- rundt gjennomsnittet? 
+3. Konfidensnivå. 90 %, 95 % eller 99 %? 95 % med tilhørende z-skår 1,96 er standard. 
+4. Konfidensintervall. Hvor nærme det faktiske gjennomsnittet ønsker du å ha det faktiske konfidensnivået på at du er? 
+
+Siden dette avhenger mer av et faktisk estimat på standardavviket, enn andelsberegninga hvor vi bare kan legge 50 % til grunn, står jeg over å demonstrere dette. 
+
+*Hva med frafall?* En ting er å beregne nødvendig utvalgsstørrelse, en anna ting er å sikre at alle som er trukket ut, faktisk deltar.
+
+*Hva hvis jeg ønsker å gjøre undersøkelser av undergrupper her?* Hvis du ønsker å gjøre analysere undergrupper (kvinner/menn, gamle/unge, institusjoner etter ulike størrelsesgrupper), trenger hver gruppe også et tilstrekkelig utvalg for at du skal nå den valgte sikkerheten for den gruppa. 
+
+Si at vår populasjon av 356 kommuner kan deles i tre grupper: 180 stk. har ikke inngått interkommunalt samarbeid, 120 har inngått interkommunalt samarbeid og er deltakere, og 56 har inngått samarbeid og er vertskommuner. Hvilket utvalg skal til, for at vi med 95 % sannsynlighet kan si at en estimert andel ligger +/- 5 prosentpoeng fra den sanne verdien?
+
+Før korrigering for størrelse blir verdien den samme som over - 385 kommuner. Men så justerer vi dette for populasjonsstørrelse
+
+```{r}
+z_verdi = 1.96
+p = 0.5
+feilmargin  = 0.05
+utvalgs_str = ((z_verdi^2)*p*(1-p)) / (feilmargin^2)
+
+korrigert_utvalgsstr = c(
+  utvalgs_str / (1 + ((utvalgs_str - 1) / 180)),
+  utvalgs_str / (1 + ((utvalgs_str - 1) / 120)),
+  utvalgs_str / (1 + ((utvalgs_str - 1) / 56))
+)
+
+korrigert_utvalgsstr
+```
+
+Da trengs det hhv. 123 kommuner uten IKS, 92 kommuner som deltar i IKS og 49 kommuner som er vertskommuner. Totalt 264 kommuner, en god del flere enn de 185 vi fant over.
+
+# Stratifisert utvalg
+
+Her er vi allerede godt på vei inn i stratifiserte utvalg. Når undergrupper i en populasjon har stor variasjon i verdiene sine, eller er interessante i seg selv, eller du allerede veit mye om noen grupper, kan det lønne seg å ta et stratifisert utvalg: dele populasjonen opp i grupper, og trekke tilfeldighetsutvalg fra hver gruppe. 
+
+Snittet fra hver gruppe vektet med størrelsen på gruppa bør bli et bra anslag på gjennomsnittet for hele populasjonen, med mindre utvalgsfeil enn et enkelt utvalg.
+
+En kan bruke litt ulike strategier for å trekke et stratifisert utvalg. Proporsjonal beregning bruker en utvalgsandel fra hver gruppe proporsjonal til andelen gruppa utgjør av den totale populasjonen. Hvis populasjonen har N totale individer, med m menn og k kvinner (slik at N = m + k), så skal den relative størrelsen på utvalgene være tilsvarende som andelen menn og andelen kvinner. Det forutsetter da selvsagt at du kjenner størrelsen på disse andelene. 
+
+Her griper diskusjonen inn i diskusjonen over, om nødvendig størrelse på utvalget. Hvis du f.eks. ønsker å si noe om alle norske kommuner, men også skal sammenlikne store, middels og små kommuner på en egenskap, med samme konfidensintervall, så tilsier det at du ikke trekker en proporsjonal andel av hvert strata, men trekker større utvalg av mindre grupper, for å sikre at disse også kan inkluderes på en god måte i analysene dine.
+
+Dette blir dermed litt innfløkt, og jeg må komme tilbake til dette på et seinere tidspunkt.
+
+# Noen avsluttende betraktninger
+
+Her har vi sett på spørsmålet om hvor stort utvalg du trenger. Det er et ganske grunnleggende spørsmål, men på sett og vis også ett av de enklere spørsmålene ved utvalgsundersøkelser - det lar seg i stor grad beregne. Det er langt vanskeligere å håndtere ulike former for skjeivhet og feil som ikke er knytta til utvalget - og kan også være krevende å avveie ønsket om antallet undersøkelser med tid og kostnad. Det viktige er ikke hvor mange, men hvem.

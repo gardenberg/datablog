@@ -1,0 +1,10 @@
+---
+title: Data til barnevernsmonitor
+author: Eivind
+date: '2021-05-27'
+slug: []
+categories: []
+tags: []
+---
+
+__Hva handler dette om?__ _En kjapp kikk på hvordan jeg har laget en dataflyt-kodegreia for å hente data til en monitor for barnevernet_ 

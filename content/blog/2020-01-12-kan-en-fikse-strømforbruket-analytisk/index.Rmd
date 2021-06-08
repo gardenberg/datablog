@@ -1,0 +1,193 @@
+---
+title: Strømforbruket som tidsserie - kan det hjelpe på strømregninga?
+author: Eivind
+date: '2020-03-20'
+slug: kan-en-fikse-strømforbruket-analytisk
+categories:
+  - R
+  - statistikk
+tags:
+  - strømforbruk
+---
+
+__Hva handler denne artikkelen om?__ _Nylig flytta jeg inn i et større hus. Da vinteren slo inn, fikk jeg lett sjokk av ny strømregning. Er det mulig å analysere seg ut av dette?_
+
+## Modell/teori/forforståelse: 
+
+Strømregninga bestemmes av nettleie + strømpris * strømforbruk. Det betyr at en kan få ned strømprisen på to måter: få en billigere strømpris, eller redusere strømforbruket. I første omgang skal jeg se på strømforbruket.
+
+- Strømforbruk bestemmes i hovedsak av mengden strøm til oppvarming av vann og luft - dvs. vaskemaskin, oppvaskmaskin, dusj/bad, panelovner og golvvarme. 
+- Behovet for oppvarming inne er større når det er kaldt ute.
+- Behovet for vasking av klær, tallerkner og egen kropp er antakeligvis forholdsvis konstant. 
+
+Strømforbruket er en tidsserie. Den vil bestå av en trend-komponent, en (eller flere) sesong-komponent, en syklisk komponent - og div. variasjon. Kan vi finne en trend som driver høyere strømforbruk over tid, og i hvor stor grad er forbruket drevet av sesongvariasjon - innad i en dag eller innad i ei uke?
+
+Det følgende er inspirert av bl.a. [Hyndman og Athanasopoulos (2020). Forecasting: Principles and Practice](https://otexts.com/fpp3/).
+
+```{r, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(here)
+library(tsibble)
+library(fable)
+library(feasts)
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+options(scipen = 100)
+```
+
+## Data
+Dataene har jeg lasta ned fra strømleverandør. Det mest fornuftige formatet var på data fra elhub.no. Kan ha alle mulige oppløsninger i tid - år, måned, dag og time.
+
+```{r, include = FALSE}
+#leser inn data
+files= list.files(path = here("content/data/power/consumption"), pattern = "*.csv", full.names = TRUE) 
+df = map_df(files, read_delim, delim = ";", escape_double = FALSE,
+  skip = 1,
+  col_names = c("fra", "til", "forbruk"),
+  col_types = cols(
+    fra = col_datetime(format = "%d.%m.%Y %H:%M"), 
+    til = col_datetime(format = "%d.%m.%Y %H:%M")
+    ), 
+  locale = locale(decimal_mark = ",", grouping_mark = ""), 
+  trim_ws = TRUE)
+
+
+duplikater = duplicates(df, index = fra)
+
+df = select(df, fra, forbruk) %>%
+  distinct(., fra, .keep_all = TRUE)
+
+```
+
+Dette gir meg 4 584 observasjoner av tre variabler: start- og stopptidspunkt for måling over en times periode, og forbruket i denne perioden. Stopptidspunktet anser jeg inntil videre som overflødig. Det ser også ut til å være en duplikat her, med to målinger for 27. oktober 2019. Jeg fjerner en av dem.
+
+En sentral utfordring når en ser på denne typen tidsserier, er å velge riktig tidsperiode å se på: er det mer relevant å se hvordan forbruket endrer seg time for time gjennom en dag, eller hvordan det endrer seg måned for måned? Med en tidsangivelse med dato og time er begge deler mulig.
+
+```{r}
+#gjør det om til en tsibble
+df = as_tsibble(df, index = fra)
+
+#litt databearbeiding
+df = mutate(df,
+  dato = as.Date(fra),
+  time = lubridate::hour(fra),
+  dag = lubridate::wday(fra, label = TRUE, abbr = FALSE),
+  ukedag = ifelse(dag %in% c("lørdag", "søndag"), "helg", "arbeidsdag"),
+  uke = lubridate::week(fra),
+  month = lubridate::month(fra)
+)
+
+```
+
+Hva skjer om vi ganske enkelt plotter denne tidsserien, time for time? Dette:
+
+```{r}
+ggplot(data = df, aes(x = fra, y = forbruk)) + 
+    geom_line() 
+```
+
+Her er det mye variasjon, tilsynelatende mye av det om lag lik. Men det er også en svak trend til stigning i forbruk gjennom perioden - med unntak av slutten av året. Det er antakeligvis juleferien - og mye varme på når jeg kom hjem igjen.
+
+For å få litt bedre forståelse for de ulike typene variasjon, ser jeg nærmere på variasjon innafor enkeltdager og enkeltuker.
+
+## Strømforbruk etter timer - kikk på en enkelt dag
+
+```{r}
+ggplot(data = df, aes(x = time, y = forbruk)) + 
+    geom_smooth() 
+```
+Det er helt klart et mønster i strømforbruket gjennom et døgn: det er høyest fra rundt kl. 16 til kl. 21. Men det er også en topp mellom 7 og 9, på morgenen.
+
+Mens trenden er tydelig, kan det også være greit å vite litt om variasjonen rundt denne trenden:
+
+```{r}
+ggplot(data = df, aes(x = time, group = time, y = forbruk)) + 
+    geom_boxplot()
+```
+
+Her ser vi at også spredninga ser ut til å være større på de tidspunktene hvor forbruket er større.
+
+
+## Forskjeller på arbeidsdager og helgedager
+
+Et element det kan være viktig å tenke på her, er at dagene i ei uke ikke er like: noen dager er fridager.
+
+```{r}
+ggplot(data = df, aes(x = time, y = forbruk, colour = ukedag)) + 
+    geom_smooth() 
+```
+
+Over ser vi altså at det er et skille mellom forbruket på arbeidsdager og i helger: i helgene er det jevnt over høyere, og har også en topp rundt kl. 10 om morgenen.
+
+Den er imidlertid ikke slik at det er et massivt høyere strømforbruk i helgene - det er noe større i gjennomsnitt, og noe større ekstremverdier, men ikke veldig forskjellig. Kanskje det er mer vaskemaskiner og dusjing i helgene?
+
+```{r}
+temp = index_by(df, dato) %>%
+  summarise(forbruk = sum(forbruk)) %>%
+  mutate(
+    dag = lubridate::wday(dato, label = TRUE, abbr = FALSE),
+    ukedag = ifelse(dag %in% c("lørdag", "søndag"), "helg", "arbeidsdag")
+    )
+
+
+ggplot(data = temp, aes(x = ukedag, y = forbruk)) + 
+  geom_boxplot() + 
+  geom_jitter(alpha = 0.1)
+
+ggplot(data = temp, aes(x = forbruk)) + 
+  geom_density(aes(fill = ukedag), alpha = 0.3)
+
+```
+
+## Strømforbruk etter dager - trend
+Så strømforbruket varierer innenfor en dag. Hvordan ser dette ut når vi summer opp forbruket for en enkelt dag, og ser på trenden fra juli til januar? Slik:
+
+```{r}
+
+ggplot(data = temp) + 
+  geom_line(aes(x = dato, y = forbruk)) 
+
+```
+
+Det er en trend til stigende forbruk over tid. Det ser også ut til å kunne være noe større variasjoner etter hvert som været blir kaldere.
+
+## Oppsummerte observasjoner
+
+Det er flere sesong-mønstre i disse dataene: 
+
+- Strømforbruket i løpet av en dag varierer
+- Det er noe forskjeller på en arbeidsdag og en helgedag. 
+- Hvis jeg hadde hatt en lengre periode ville jeg også sett variasjon med årstidene. 
+- Det kan kanskje også sies å være en syklisk komponent her, altså variasjon over tid uten fast samvariasjon med kalenderen: med jevne mellomrom faller strømforbruket tilsvarende ei langhelg eller noen uker. Dette er feriene. Her har jeg antakeligvis ikke nok data til å få noe fornuftig ut av det.
+
+## Dekomponering
+Det finnes ulike teknikker for å skille disse ulike komponentene fra hverandre. Her skiller en mellom additive og multiplikativ dekomponering. Det siste er det riktige å gjøre hvis hvis sesong-mønstrenes variasjon samvarierer med tid - altså hvis variasjonen øker med tida, som den gjør i dette tilfellet. 
+
+Jeg har rett og slett ikke helt forstått den multiplikative dekomponeringa enda (eller alternativet, å bruke en logtransformert serie), så da anvender jeg additiv dekomponering for å se hvordan det ser ut. Etter litt kjapp koding blir det seende slik ut:
+
+
+```{r, fig.height = 8}
+dekomponert <-  df %>%
+  model(STL(forbruk ~ season(period = "1 day") + season(period = "1 week")))
+
+components(dekomponert) %>%
+  autoplot() + 
+  labs(x = "tid")
+```
+
+Øverste figur viser forbruket over tid. Figuren på linje to viser den isolerte trenden, mens linje tre og fire viser sesong-mønstre innenfor en dag og ei uke. Nederste linje viser gjenstående variasjon. 
+
+Den grå boksen på y-aksen til venstre trekker oppmerksomheten mot at y-aksene er ulike. Det er størst variasjon i restleddet og den opprinnelige serien, mens de tre komponentene har mindre variasjon innad i seg. Dette er nok et tegn på at det er et stort og uforklart restledd her, som ikke lar seg enkelt dekomponere til en trend eller relatert til konstant daglig eller ukentlig variasjon. 
+
+Dette blir enda tydeligere hvis vi plotter en sesongjustert graf av forbruket - dette gir ikke et mye tydeligere bilde enn den ujusterte grafen.
+
+```{r}
+df %>%
+  autoplot(forbruk, color='gray') +
+  autolayer(components(dekomponert), season_adjust, color='blue') +
+  xlab("Tid") + ylab("Forbruk") +
+  ggtitle("Strømforbruk - sesongjustert")
+```
+

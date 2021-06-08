@@ -1,0 +1,16 @@
+---
+title: 'Ukens anbefaling: to tekster om forskningsbasert policy'
+author: Eivind
+date: '2012-09-23'
+slug: ukens-anbefaling-to-tekster-om-forskningsbasert-policy
+categories:
+  - evidensbasert policy
+tags:
+  - statsvitenskap
+---
+
+Duncan Green, seniorrådgiver hos Oxfam, skriver på [«From poverty to power»](https://oxfamblogs.org/fp2p/can-theories-of-change-help-researchers-or-their-funders-have-more-impact/) om «Theories of Change» og hvordan forskere kan bruke teori for å øke effektiviteten til mottakere av forskningsstøtte. Med andre ord, et teoretisk blikk på hvordan forholdet mellom forskere og beslutningstakere ser ut, og hvordan organisasjoner som gir støtte til forskning og tiltak i NGOer kan bidra til å «optimaliseres» NGOers forskning. «Theories of Change» ser ut til å referere til dette rammeverket for å skape endring.
+
+I tråd med dette rammeverket foreslår Green at 1) forskere ikke har insentiver til å legge tydelig fram sine antakelser om politisk endring, noe de burde gjøre 2) at forskere/NGOer må bedre forstå hvordan beslutningstakere tar til seg og bruker informasjon, 3) at endring er avhengig av «mulighetsvinduer», og dermed må NGOer kunne reagere kjapt, 4) at mål og midler må defineres tydelig. Å «endre diskursen» er ikke et mål for et prosjekt.
+
+En annen som tar for seg lignende utfordringer er Matt Wood, som på [LSE-bloggen](blogs.lse.ac.uk/impactofsocialsciences/2012/05/30/insider-view-relevance-political-scientists-goverment/) tar for seg hvilke krav byråkratiet stiller til  statsvitere og andre for at deres forskning skal være relevant. Bevisene er anekdotiske, men virker rimelige og velkjente: Byråkrater ønsker seg mer forskning som kan brukes i praksis, og ønsker seg også bedre metodisk kunnskap. Dette er vanskelig, i det universitetsforskning tar lang tid, mens beslutningstakere trenger hurtig input. Dette gir rom for tenketanker og andre institutter som spesialiserer seg på å levere hurtig. Videre er kvantitative bevis det mest ønskelige – men hva da med kvalitativ forskning?

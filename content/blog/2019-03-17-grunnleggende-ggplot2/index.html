@@ -1,0 +1,130 @@
+---
+title: Visualisere andeler med ggplot2
+author: Eivind
+date: '2019-03-17'
+slug: grunnleggende-ggplot2
+categories:
+  - visualisering
+tags:
+  - R
+  - ggplot2
+---
+
+
+
+<p><strong>Hva handler denne artikkelen om?</strong> <em>ggplot2-kode for å visualisere andeler som kakediagram, vaffeldiagram og stabla søylediagram</em></p>
+<p>En vanlig feil i datavisualiseringer er å bruke teknikker ment for andelsdata, på data som ikke er andeler. Visualiseringer som er egna for andeler er blant annet:</p>
+<ul>
+<li>kakediagram/paidiagram: brukes når du vil ha en kompakt framvisning av andeler for inntil 3 kategorier på en variabel.</li>
+<li>vaffeldiagram: brukes hvis du vil ha framvisning av andeler for flere enn 3 kategorier på en variabel</li>
+<li>stablede søylediagram: brukes hvis du vil ha en framvisning av andeler for inntil 3 kategorier for flere grupper.</li>
+</ul>
+<p>Så hva gjør du med andeler hvis du har flere enn 3 kategorier som du vil se for flere ulike grupper eller over tid? Da må du bare prøve deg fram.</p>
+<pre><code>## Warning: package &#39;PxWebApiData&#39; was built under R version 3.5.3</code></pre>
+<pre><code>## Loading required package: httr</code></pre>
+<pre><code>## Loading required package: rjstat</code></pre>
+<pre><code>## Loading required package: jsonlite</code></pre>
+<pre><code>## 
+## Attaching package: &#39;jsonlite&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:purrr&#39;:
+## 
+##     flatten</code></pre>
+<div id="eksempeldata-fra-ssbs-apne-api." class="section level3">
+<h3>Eksempeldata fra SSBs åpne API.</h3>
+<p>Eksempeldataene henter jeg fra ssb.no, hvor jeg ser at fylkeskommunale regnskapstall er tilgjengelig. Byråkrathurra! Jeg har ikke stor peiling på fylkeskommunale regnskap, men <a href="https://data.ssb.no/api/v0/no/console">ser</a> at en kan få ut brutto driftsutgifter fordelt på generelle tjenesteområder, for de ulike regionene. I disse regionreform-tider er vel fylkeskommunal pengebruk et hett tema? Kanskje ikke - jeg vil tippe det er mye vei, transport, videregående skole og kanskje littebitt tannlege her.</p>
+<pre class="r"><code>#henter data med PxWebApiData::ApiData
+alle_data = ApiData(&quot;https://data.ssb.no/api/v0/no/table/12163&quot;,
+             KOKfylkesregion0000 = TRUE,
+             KOKfunksjon0000 = c(&quot;FGF1a&quot;, &quot;FGF1b&quot;, &quot;FGF1c&quot;, &quot;FGF2&quot;, &quot;FGF3&quot;, &quot;FGF4&quot;, &quot;FGF5&quot;, &quot;FGF6a&quot;, &quot;FGF7&quot;, &quot;FGF8&quot;), 
+             KOKart0000 = &quot;AGD10&quot;,
+             ContentsCode = &quot;KOSandel3501&quot;,
+             Tid = &quot;2018&quot;
+)
+
+#ApiData() returnerer både koder og menneskelesbar tekst, jeg går for tekst denne gangen
+df &lt;- alle_data[[1]] %&gt;%
+  select(.,-art,-statistikkvariabel,-`år`) #filtrerer ut unødvendig info</code></pre>
+</div>
+<div id="kakediagram-paidiagram-sektordiagram" class="section level2">
+<h2>Kakediagram (paidiagram / sektordiagram)</h2>
+<p>Det første en lærer når en begynner å kikke mer på datavisualisering er at <a href="http://www.storytellingwithdata.com/blog/2011/07/death-to-pie-charts">kakediagram er onde</a>. Imidlertid har nyere (2016-ish) <a href="https://eagereyes.org/pie-charts">forskning</a> vist at de ikke er så dårlige som ryktet skal ha det til. De blir gjerne beskyldt for å kode data som vinkler, noe folk ikke er gode på å se. Forskninga til Kosara sitert i forrige lenke viser at det enten er området eller en eller annen lengde som leses, kanskje en kombinasjon - og at de gjør det bedre enn andre alternativ.</p>
+<pre class="r"><code>#I tråd med pai-hatet, mangler det en egen geom_pie i ggplot. 
+#For å få det til må du derfor summere opp ting til totale antall, 
+#plotte dette som et søylediagram med x=1, 
+#og så justere coord_polar til y. 
+
+temp &lt;- filter(df,region==&quot;Landet uten Oslo&quot;)
+
+ggplot(data = temp, aes(x = 1, y = value, fill = funksjon)) +
+    geom_col()+
+    coord_polar(theta=&quot;y&quot;)+
+    theme_void()+
+    ggtitle(&quot;Fylkeskommunal pengebruk etter område&quot;, subtitle = &quot;Alle unntatt Oslo&quot;)</code></pre>
+<p><img src="/post/2019-03-17-grunnleggende-ggplot2_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Det virker rimelig å si at om du har mer enn noen få biter (tre ser ut til å være et tips), så blir figuren vanskelig å lese. Over ser vi tydelig at videregående opplæring og samferdsel er de største postene, antakeligvis fulgt av eiendomsforvaltning. Men så? Siden det er vanskelig å lese dem presist, egner de seg ikke for svært (men ikke helt) like andeler.</p>
+<p>Fordelen er at de er kompakte og intuitive, når de brukes riktig:</p>
+<p><img src="/post/2019-03-17-grunnleggende-ggplot2_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>
+<div id="vaffeldiagram" class="section level2">
+<h2>Vaffeldiagram</h2>
+<p>Et vaffeldiagram (waffel chart) kan være mer presist enn et kakediagram, og koder helt klart data som område, ikke vinkler eller vinkler i kombinasjon med noe annet.</p>
+<p>Figuren tåler ikke urimelige mengder klasser. Den tar også litt mer plass enn paien, men det er jo fordi en viser mer informasjon.</p>
+<p>Eksempelet her har 10x10 ruter. Det trenger andelene direkte, så om du ikke har de, må du regne dem ut - eller som i mitt tilfelle, om du har avrudningsfeil, må du komme deg rundt det på no vis.</p>
+<pre class="r"><code>#litt databearbeiding først - filtrering, sortering og avrunding
+temp &lt;- filter(df,region==&quot;Landet uten Oslo&quot;)%&gt;%
+  arrange(.,desc(value))%&gt;%
+  mutate(.,andel = round(value,0))
+
+#waffle() tar en &quot;named vector&quot;
+andel_utgifter = temp$andel
+names(andel_utgifter) = temp$funksjon
+
+#så selve plottinga
+waffle(andel_utgifter, 
+        colors=qualitative_hcl(10,&quot;Dark 3&quot;), 
+        xlab=&quot;1 rute = 1 prosent&quot;, 
+        title= &quot;Fylkeskommunale utgifter etter område&quot;, 
+        legend_pos=&quot;right&quot;)</code></pre>
+<p><img src="/post/2019-03-17-grunnleggende-ggplot2_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>På grunn av fargevalget er ikke denne mye lettere å lese. Men med litt tid på seg til å velge ut 10 forskjellige farger (eller noe mer sammenslåing av kategorier), kunne det blitt lettere å se at</p>
+<ul>
+<li>44 prosent av utgiftene for fylkeskommuner er i snitt til videregående,</li>
+<li>like over 30 prosent går til samferdsel,</li>
+<li>deretter kommer eiendomsforvaltning med 6 prosent,</li>
+<li>tannhelse og administrasjon ligger på 4 prosent,</li>
+<li>næringsforvaltning og div andre kommer på 2 prosent,</li>
+<li>mer administrative utgifter ligger på 1 prosent.</li>
+</ul>
+</div>
+<div id="stablet-sylediagram" class="section level2">
+<h2>Stablet søylediagram</h2>
+<p>Med kakediagram kommer en langt med å se på andeler på en variabel. Men hva hvis en vil sammenlikne andelene mellom ulike grupper? Du kunne prøvd deg med flere paidiagram eller vaffeldiagram etter hverandre - men de er bygd for intern sammenlikning, ikke sammenlikning på tvers, og tar en del plass.</p>
+<p>Stablede søylediagram egner seg her. De kan gi mer kompakt informasjon av andeler innenfor ulike grupper mellom ulike enheter (som f.eks. andelen med sykdom x i land A og B) enn det kakediagram og vaffeldiagram kan.</p>
+<p>Med tittelen <a href="https://eagereyes.org/techniques/stacked-bars-are-the-worst">“Stacked bars are the worst!”</a> mer enn antyder Kosara hva han synes om slike diagrammer. Forskningen han siterer ser ut til å handle om bruk av stablede søyler for verdier som ikke er prosenter, men det betyr ikke at de er veldige gode bare fordi dette er prosenter.</p>
+<p>Det er altså vanskelig å vurdere flere ulike grupper mot hverandre innad i samme enhet (som f.eks. andelen med sykdom x, y og z i land A). Bruk dem ikke alene for en gruppe, bruk ikke mange ulike (men nesten like) kategorier innad i hver stabla søyle. Og siste tips: Pass på hvilke kategorier som får verdifull plass nederst og øverst, hvor det er mulig å lese ut størrelsen. Det kan gjøres ved å endre rekkefølgen på kategorier som faktorer.</p>
+<pre class="r"><code>#litt databearbeiding først
+#her er vi interessert i alle fylkeskommunene og gjennomsnittet for landet uten Oslo,
+#vi vil også ha maks tre kategorier, 
+#og sortert slik (via factor-levels) at videregående kommer nederst
+#regionene skal være sortert etter størrelsen på budsjettet til vgs
+#litt usikker på hvordan fct_reorder2 får til det, men det virker
+temp &lt;- filter(df, grepl(&quot;fylkeskommune&quot;,region)|region==&quot;Landet uten Oslo&quot;)%&gt;%
+  mutate(.,
+         funksjon_summert = ifelse(funksjon %in% c(&quot;Videregående opplæring samlet&quot;,&quot;Samferdsel, fylkeskommune&quot;), funksjon, &quot;Andre&quot;),
+         funksjon_summert = factor(funksjon_summert,levels=c(&quot;Andre&quot;,&quot;Samferdsel, fylkeskommune&quot;,&quot;Videregående opplæring samlet&quot;)),
+         region = str_replace(region,fixed(&quot;fylkeskommune&quot;),replacement=&quot; &quot;)
+         )%&gt;%
+  group_by(.,region,funksjon_summert)%&gt;%
+  summarise(.,andel = sum(value))%&gt;%
+  ungroup()%&gt;%
+  mutate(.,region = fct_reorder2(region,as.numeric(funksjon_summert),andel))
+
+ggplot(data=temp)+
+  geom_col(aes(x=region,y=andel,fill=funksjon_summert),position=&quot;fill&quot;) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
+  labs(fill=&quot;Funksjon&quot;)</code></pre>
+<pre><code>## Warning: Removed 6 rows containing missing values (position_stack).</code></pre>
+<p><img src="/post/2019-03-17-grunnleggende-ggplot2_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>Oslo er et særtilfelle, som gjør figurverdien misvisende - andelene utgifter i fylket summerer til 11 prosent, i motsetning til de fleste andre. Men position=“fill” gjør at alle settes til å fylle opp til 100 % i figuren.</p>
+<p>Hva lærer vi av dette? Kanskje ikke så mye. Noen fylker ligger over landssnittet på 44 % av utgiftene til videregående, og noen ligger ganske langt under - og da er det hovedsaklig samferdsel som tar plassen som største utgiftspost. At det dermed er flate Østlands- og sørlandsfylker som bruker en større del på videregående, og vestlands- og Nord-Norge som bruker mer på samferdsel virker intuitivt rimelig.</p>
+</div>

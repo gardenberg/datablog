@@ -1,0 +1,152 @@
+---
+title: Hvordan ser barnevernet ut?
+author: Eivind
+date: '2020-12-01'
+slug: hvordan-ser-barnevernet-ut
+categories: []
+tags: []
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<p><strong>Hva handler dette om?</strong> <em>Det norske barnevernet er mye diskutert - men hvordan ser det egentlig ut? Hvor mange jobber der? Hvor jobber de? Vi henter noe data fra SSB, lager noen figurer og kart</em></p>
+<p>Høsten 2020 skifta jeg beite, og begynte å arbeide med barnevernsspørsmål, i stedet for integreringsspørsmål.</p>
+<p>Det er ikke et mindre debattert område, akkurat - og det er vel egentlig naturlig. Det er få myndigheter som har så stor eksplisitt makt til å gripe inn i familie og privatliv, for å sikre barns beste. Når da forskjellige familier og grupper har forskjellige forventninger til barneoppdragelse og statens rolle, så skal det lite til for å lage debatt - særlig når de ansatte i barnevernet er overarbeida mennesker, som så mange andre velferdsarbeidere.</p>
+<p>En av de første oppgavene jeg fikk, var å se på fordelingen av stillinger i det kommunale barnevernet, og hva en omlegging av det øremerka statlige tilskuddet for slike stillinger kan ha å si. Om lag 1 av 6 av årsverkene i det kommunale barnevernet er finansiert av et øremerka statlig tilskudd, som har vært hovedvirkemiddelet i en satsing på barnevernet som har vart en god stund nå.</p>
+<p>Og hvordan ser vi på fordelinger av stillinger? Med R, selvsagt!</p>
+<p>Dataene som viser fordelinga av øremerka statlig tilskudd er forsåvidt ikke hemmelige, men siden de ikke er publisert noe sted, står jeg over å gjøre det i en liten bloggpost. Det aller meste av data henter vi derfor fra SSBs API, som gir tilgang til dataene i statistikkbanken.</p>
+<pre class="r"><code>#befolkningsdata - antall personer og antall barn
+#bruker her SSBs ApiData-funksjon for lettere spørring mot APIet.
+temp_befolkning = ApiData(
+  urlToData = &quot;https://data.ssb.no/api/v0/no/table/07459&quot;,
+  Region = TRUE,
+  Kjonn = FALSE,
+  Alder = TRUE,
+  ContentsCode = &quot;Personer1&quot;,
+  Tid = &quot;2020&quot;
+)
+temp_befolkning = temp_befolkning$dataset
+
+#antall personer totalt, for kommuner (Regioner med 4 tegn)
+befolkning_totalt = group_by(temp_befolkning, Region) %&gt;%
+  summarise(befolkning_totalt = sum(value)) %&gt;%
+  filter(nchar(Region) == 4, befolkning_totalt &gt; 0)
+
+#antall barn (0-17 år), i kommuner (Region med 4 tegn)
+befolkning_barn = mutate(temp_befolkning, Alder = parse_number(Alder)) %&gt;%
+  filter(Alder &lt; 18) %&gt;%
+  group_by(Region) %&gt;%
+  summarise(befolkning_barn = sum(value)) %&gt;%
+  filter(nchar(Region) == 4, befolkning_barn &gt; 0)
+
+#binder det inn i et hoved-datasett for analysen
+df = befolkning_totalt %&gt;%
+  left_join(., befolkning_barn)</code></pre>
+<pre><code>## Joining, by = &quot;Region&quot;</code></pre>
+<p>Tallene for årsverk, tiltak og undersøkelser i barnevernet er tilgjengelig for 2020.</p>
+<p>Statistikken for stillinger omfatter alle såkalte funksjoner knytta til barnevernet. Med funksjoner mener arbeidsområdet for stillingen, slik det kategoriseres i KOSTRA- KOmmune-STat-Rapportering. En snakker da om funksjon 244 (barnevernstjeneste), 251 (stillinger knytta til barnevernstiltak når barnet ikke er plassert av barnevernet) og 252 (stillinger knytta til barnevernstiltak når barnet er plassert av barnevernet).</p>
+<p>Vi finner også tall for antallet barn med tiltak eller undersøkelser i løpet av året 2020</p>
+<pre class="r"><code>#KOSTRA-data på antallet årsverk i kommunen.
+
+temp_årsverk = ApiData(
+  urlToData = &quot;https://data.ssb.no/api/v0/no/table/12305&quot;,
+  KOKkommuneregion0000 = TRUE,
+  ContentsCode = &quot;KOSsumstillinger0000&quot;,
+  Tid = &quot;2020&quot;
+)
+
+temp_årsverk = temp_årsverk$dataset
+
+#finner stillingene (årsverk) i kommunene.
+stillinger = rename(temp_årsverk, Region = KOKkommuneregion0000) %&gt;%
+  filter(nchar(Region) == 4)
+
+#legger det til analyse-datasettet
+df = left_join(df, select(stillinger, Region, stillinger_barnevernet = value))</code></pre>
+<pre><code>## Joining, by = &quot;Region&quot;</code></pre>
+<pre class="r"><code>#KOSTRA-data på antallet barn med undersøkelse eller tiltak - barn 0-17 år
+temp_undtil = ApiData(
+  urlToData = &quot;https://data.ssb.no/api/v0/no/table/12870&quot;,
+  KOKkommuneregion0000 = TRUE,
+  KOKalder0000 = &quot;F000-017&quot;,
+  ContentsCode = &quot;KOSbvbarnust0000&quot;,
+  Tid = &quot;2020&quot;
+)
+
+temp_undtil = temp_undtil$dataset
+
+#finner antallet i kommunene
+undtil = rename(temp_undtil, Region = KOKkommuneregion0000) %&gt;%
+  filter(nchar(Region) == 4)
+
+#legger det til analyse-datasettet
+df = left_join(df, select(undtil, Region, barn_undersøkelser_tiltak = value))</code></pre>
+<pre><code>## Joining, by = &quot;Region&quot;</code></pre>
+<pre class="r"><code>rm(temp_befolkning, temp_undtil, temp_årsverk, undtil, stillinger, befolkning_barn, befolkning_totalt)</code></pre>
+<p>Mens befolkningsdataene er komplette, er det noen missing-verdier i KOSTRA-dataene. Her er det 11 manglende observasjoner for stillinger, og 8 for antallet barn med undersøkelse eller tiltak. Formodentlig er dette pga. små observasjoner eller manglende data pga. manglende rapportering, men API-funksjonen i PXApiWebData returnerer p.t. kun NA for disse.</p>
+<div id="hvordan-er-dagens-fordeling-av-årsverk-i-barnevernet" class="section level2">
+<h2>Hvordan er dagens fordeling av årsverk i barnevernet?</h2>
+<p>Oppsummert var det i 2020 om lag 6 261 årsverk i det kommunale barnevernet.</p>
+<p>Antallet ansatte i barnevernet følger i stor grad størrelsen på kommunen. Siden det er veldig stor forskjell på den største og den minste kommunen i Norge, betyr det at de kommunale barnevernstjenestene også har veldig forskjellig størrelse: 25 % av kommunene har 3 årsverk i barnevernet, 50 % har litt over 5,5 årsverk, mens gjennomsnittet for alle ligger på 17,5.</p>
+<pre><code>## Warning: Removed 11 rows containing non-finite values (stat_bin).</code></pre>
+<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>På figuren har jeg også markert 25 %, 50 % og 75 %-kvartiler, altså punktene hvor 25 % av observasjonene ligger til venstre, 50 %, osv. 75 % av kommunene har 16,5 stillinger. Kun 9 kommuner har over 100 årsverk i barnevernstjenesten, men disse 9 kommunene utgjør til gjengjeld 1/3 av alle årsverk i det kommunale barnevernet. Særlig Oslo skiller seg ut med 723,4 årsverk.</p>
+<p>Dette er i grunnen interessant i seg selv, og sier noe om hva en bør tenke på når en analyserer statistikk for kommune-Norge: kommunene er i bunn og grunn vilt forskjellig.</p>
+<p>Oslo ligger langt til høyre - både fordi det er en mye større kommune enn de andre, og fordi de på barnevernsområdet er spesielle: mens andre kommuner leverer noen tjenester selv, og så får andre tjenester fra det statlige barnevernet (Bufetat), står Oslo for tjenestene fra Bufetat på egen hånd.</p>
+<p>Men siden 75 % av tjenestene ligger på 16,5 stillinger, er det ikke bare Oslo som er avvikende ut fra en normalfordelt statistikkforståelse:</p>
+<pre><code>## Warning: Removed 11 rows containing non-finite values (stat_boxplot).</code></pre>
+<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Og det skyldes jo at dette ikke er normalfordelt, det likner mer på en Poisson-fordeling. En må selvsagt ta kommunestørrelsen med i betraktning:</p>
+<pre><code>## `geom_smooth()` using method = &#39;loess&#39; and formula &#39;y ~ x&#39;</code></pre>
+<pre><code>## Warning: Removed 11 rows containing non-finite values (stat_smooth).</code></pre>
+<pre><code>## Warning: Removed 11 rows containing missing values (geom_point).</code></pre>
+<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">term</th>
+<th align="right">estimate</th>
+<th align="right">std.error</th>
+<th align="right">statistic</th>
+<th align="right">p.value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">(Intercept)</td>
+<td align="right">0.9745997</td>
+<td align="right">0.4616372</td>
+<td align="right">2.111181</td>
+<td align="right">0.0354799</td>
+</tr>
+<tr class="even">
+<td align="left">befolkning_totalt</td>
+<td align="right">0.0011074</td>
+<td align="right">0.0000097</td>
+<td align="right">113.943440</td>
+<td align="right">0.0000000</td>
+</tr>
+</tbody>
+</table>
+<p>Modellert på denne måten, ser det plutselig ikke så rart ut: I gjennomsnitt er det nesten 1 stilling pr. kommune i barnevernet, og så 1 ekstra stilling per 1000 innbygger i kommunen.</p>
+<p>Den relevante enheten er imidlertid ikke nødvendigvis kommune, men barnevernstjeneste. Kommunen er i barnevernsloven lovpålagt å ha en barnevernstjeneste, men over halvparten av alle kommuner har inngått interkommunalt samarbeid om en slik tjeneste.</p>
+<p>Når vi summerer opp landets barneverntjenester på den måten, stiger størrelsen: medianbarnevernet har 12 årsverk, gjennomsnittet 26,5 årsverk. Hovedsaklig er det da de kommunene som i Kostra-oversikten rapporterer om få årsverk, som ser ut til å inngå i større enheter/tjenester som deltakere, med en større kommune som vertskommune.</p>
+<p>Her er det også verdt å merke seg at Oslo, Bergen og Trondheim (og kanskje flere) har separate barnevernstjenester i ulike bydeler (<em>noe som ikke kommer fram i datagrunnlaget</em>)</p>
+</div>
+<div id="antall-barn-per-stilling-i-barnevernstjenesten" class="section level1">
+<h1>Antall barn per stilling i barnevernstjenesten</h1>
+<p>Her kan en også poengtere at å beskrive en kommunal barnevernstjeneste ut ifra antallet stillinger aleine ikke er så veldig informativt. Selv om antallet stillinger i stor grad følger folketallet, er det stor variasjon i antallet barn i kommunen pr. årsverk i barnevernstjenesten, og antall barn med undersøkelse eller tiltak pr. årsverk i barnevernet.</p>
+<p>Dette kan være indikatorer ved ulike forhold, f.eks. si noe om hvordan barnevernet er prioritert i kommunen, eller om det er et stort innslag av kommunale eller private tiltak, eller kapasitet og arbeidsbelastning for de som arbeider i barnevernet.</p>
+<p>Om vi summerer antallet barn i kommunen fra 0 til 17 år, og fordeler på KOSTRA-tallene for stillinger i barnevernet, ser vi en ganske stor spredning - men på en fordeling hvor gjennomsnitt gir mening: Gjennomsnittet ligger på 171 barn i kommunen per stilling i barnevernstjenesten. 250 kommuner ligger på +/- 60 barn rundt dette snittet.</p>
+<pre><code>## Warning: Removed 11 rows containing non-finite values (stat_bin).</code></pre>
+<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+</div>
+<div id="antall-barn-med-undersøkelse-eller-tiltak-pr.-årsverk-i-barnevernt" class="section level1">
+<h1>Antall barn med undersøkelse eller tiltak pr. årsverk i barnevernt</h1>
+<p>Fra KOSTRA-tallene ser vi også hvor mange barn kommunen rapporterer om å ha gjennomført undersøkelser eller tiltak for/med. Fordelt på antallet stillinger, får vi et uttrykk for arbeidsbelasning. Samtidig er det slik at saker er svært ulike - noen krever mye tid, andre krever lite.</p>
+<p>I gjennomsnitt har en kommune 13 barn med undersøkelser eller tiltak pr. årsverk i barnevernet. 300 av kommunene ligger mellom 10 og 20 barn med undersøkelse eller tiltak pr. årsverk.</p>
+<p>NB: ettersom stillingene her inkluderer alle funksjoner, kan en mulig feilkilde være at det varierer mellom kommuner hvorvidt de bruker private leverandører til ulike hjelpetiltak.</p>
+<pre><code>## Warning: Removed 17 rows containing non-finite values (stat_bin).</code></pre>
+<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+</div>

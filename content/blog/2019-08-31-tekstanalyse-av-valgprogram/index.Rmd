@@ -1,0 +1,195 @@
+---
+title: Hvordan lese ni partiprogram skikkelig fort? Tidytext-analyse av valgprogram
+author: Eivind
+date: '2019-08-31'
+slug: tekstanalyse-av-valgprogram
+categories:
+  - R
+  - valg
+tags: []
+---
+
+__Hva handler denne artikkelen om?__ _En kikk på valgprogrammene for kommunevalget i Oslo_
+
+Det er høst, 2019, og på tide med LOKALVALG! En statsviters våte drøm? Ikke egentlig - plutselig får en spørsmål om Dhonts metode og slikt som en ikke lenger husker. Men det en kan gjøre er å sette seg inn i partiprogram, og diskutere hvem som er best.
+
+Det er ikke så lett. Alle mener selvsagt at de er best, og snakker av en eller anna grunn neste bare om ting en ikke kan være uenig i.
+
+Kan tekstanalyse hjelpe oss litt på veien? For å undersøke det gjør jeg tre ting (som tatt ut av [https://www.tidytextmining.com/index.html](Tidy Textmining with R)):
+
+1. Hvilke ord bruker partiene i Oslo mest? Røpealarm: det er fine ord om seg selv.
+2. Hvilke ord bruker hvert enkelt parti i større grad enn de andre partiene? Røpealarm: De snakker mer om politiske tema som de selv er opptatt av - men det er vanskelig å si hvor mye de er opptatt av det.
+3. Hvilke temaer snakker de ulike partiene mest om? Røpealarm: Seg selv - det var ikke mulig å finne substansielle temaer som helse, eldre og barn - partiene er for det meste opptatt av seg selv
+
+```{r, warning = FALSE, message = FALSE}
+suppressPackageStartupMessages(library(tidyverse))
+library(tidytext)
+library(here)
+library(tm)
+library(topicmodels)
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+
+```
+
+##Datagrunnlaget
+Alle partiene har PDF-filer av valgprogrammene sine for Oslo tilgjengelig. PDF-filer lar seg lese inn, men krever litt tygging for å få fjerna punktsetting, nummer og lignende. 
+
+Helt til slutt fjerner jeg også stoppord - 176 vanlige ord i det norske språket som jevnt over brukes mye (i, og, jeg, det, ...). 
+
+```{r, warning = FALSE, message = FALSE}
+#med TM
+mappe <- here("content/data/valgprogram")
+
+# lag et korpus fra pdf-filene
+converted <- VCorpus(DirSource(mappe), readerControl = list(reader = readPDF, language = "nb")) %>% 
+  DocumentTermMatrix(., control = list(language = "nb", 
+                                       removePunctuation = TRUE,
+                                       removeNumbers = TRUE,
+                                       stopwords = stopwords("no") #fjerner stoppord 
+                                       ))
+
+#opprydding
+#fjerner .pdf-suffixet
+df = tidy(converted) %>%
+  mutate(., document = gsub(".pdf", "", document, fixed = TRUE))
+
+#setter bedre navn på variablene
+names(df) = c("parti", "term", "antall")
+
+```
+
+### Hvem er mest ordrik?
+Her sitter vi da med en data.frame hvor hver rad er frekvensen til et ord i et partis partiprogram. Hvor ordrike er partiene i sine valgprogram?
+
+```{r}
+#litt enkel grafing 
+temp = group_by(df, parti) %>%
+  summarise(., antall_termer = n())
+
+ggplot(data = temp, aes(x = fct_reorder(parti, antall_termer), y = antall_termer)) + 
+  geom_col() + 
+  coord_flip() + 
+  labs(title = "Rødt har flest unike termer i partiprogrammet", subtitle = "Partienes valgprogram for Oslo, 2019-2023", y = "Antall termer",x = "Parti")
+```
+###Hvilke ord er mest brukt i valgprogrammene?
+```{r}
+temp = group_by(df, term) %>%
+  summarise(., antall = sum(antall)) %>%
+  top_n(., 10, antall)
+
+ggplot(data = temp, aes(x = fct_reorder(term, antall), y = antall)) + 
+  geom_col() + 
+  coord_flip() + 
+  labs(title = "Oslo det mest brukte ordet i Oslo-valgkampen", y = "Antall ganger brukt",x = "Ord")
+```
+
+De øvrige ordene er heller ikke spesielt overraskende: Gode, trygge, sikre honnørord, som antakeligvis brukes til å beskrive både innsatsen i forrige periode, innsatsen framover, og hvordan kommunen vil bli med akkurat Dette Partiet ved roret. Det eneste subsansielle som kommer fram her er barn - noe som ikke er rart, en sentral del av kommunepolitikk handler nettopp om barna.
+
+##Hva er de viktigste ordene for de ulike partiene?
+
+En ganske usofistikert måte å måle dette på er ved å ganske enkelt telle opp alle ordene, og så se hvilke ord hvert enkelt parti bruker mest.
+
+```{r, fig.height = 10}
+temp = group_by(df, parti) %>%
+  top_n(10, wt = antall) %>%
+  arrange(., antall)
+
+ggplot(data = temp, aes(x = reorder_within(term, antall, parti), y = antall, fill = parti)) + 
+  geom_col(show.legend = FALSE) + 
+  facet_wrap(~parti, scales = "free", ncol = 2) + 
+  scale_x_reordered() + 
+  coord_flip() + 
+  labs(title = "Oslo og eget parti langt det mest vanlige å omtale", subtitle = "Ti mest brukte ord i  valgprogrammet for 2019-2023", x = "Parti", y = "Antall ganger ordet er nevnt")
+
+```
+
+
+Ordene skiller seg ikke veldig fra hverandre. Alle snakker mest om Oslo. 
+
+- Ap snakker om seg selv. FrP snakker om kommune-kommune-kommune. 
+- Høyre vil ha flere gode og enda bedre barn. 
+- Det vil også KrF, men de vil ha flere sikre løsninger for disse barna. 
+- MDG vil sikre en grønn by. 
+- Rødt er opptatt av hva kommunale ansatte bør gjøre. 
+- Sp er opptatt av seg og sitt eget bystyreprogram. 
+- SV vil ...sikre kommune gjennom ny kommune? 
+- Venstre slår seg også løs med sikring av noe bedre.
+
+##Hva skriver partiene om, som de andre ikke nevner?
+Ikke så stort å lære av dette, egentlig. En potensielt nyttigere tanke er å finne fram til unike ord for hvert parti, som i mindre grad brukes av de andre partiene. Dette er såkalte tf_idf-ord, hvor ord som brukes mye på tvers av dokumenter (her, partiprogram) får lavere vekt, mens ord som brukes lite på tvers får høyere vekt.
+
+```{r fig.height = 10}
+program_ord = bind_tf_idf(df, term, parti, antall)
+
+temp = group_by(program_ord, parti) %>%
+  top_n(10, wt = tf_idf)
+
+ggplot(data = temp, aes(x = reorder_within(term, tf_idf, parti), y = tf_idf, fill = parti)) + 
+  geom_col(show.legend = FALSE) + 
+  facet_wrap(~parti, scales = "free", ncol = 2) + 
+  scale_x_reordered() + 
+  coord_flip() + 
+  labs(title = )
+
+```
+(Merk her at top_n()-funksjonen tar med flere ord hvis rangeringa er uavgjort - så arbeiderpartiet får flere ord)
+
+Ikke overraskende snakker fortsatt alle partiene mest om seg. 
+
+- Ap snakker mer om fengsel, lønnstilskudd, språkkunnskaper og anstendighet enn de andre. 
+- FrP vil helt klart konkurranseutsette, og er opptatt av rusken, gravplasser, utviklingshemmede og hva folk kler seg i.
+- Høyre snakker om introduksjonsprogrammet, yrkesfag, barnehage og oppvekst. 
+- KrF er opptatt av seniorer og formodentlige både kristne og humanistiske verdier. 
+- MDG snakker om bærekraft, forbruk og dyrevelferd. 
+- Rødt er overaskende opptatt av foto, kvinner og millioner - kanskje noe mindre informativt enn de andre. Sp er veldig opptatt av seg selv - og sosialfaget. 
+- SV er mer enn de andre opptatt av samer, turveier, kvinner , ulikhet og rasisme. 
+- Venstre - de vil ha småhus, sexarbeidere, rusbrukere og skolebibliotek.
+
+Denne indikatoren plukka opp på en god måte hva de ulike partiene er opptatt av, og skriver mer om enn andre partier. Men gir det en pekepinn på hva en skal stemme? Nja. En bedre indikator hadde vært om en kunne identifisert mer substansielle temaer på tvers av partiprogrammene, som f.eks. skole, slik at en kunne sett hvor mye hvert enkelt partiprogram bidro til dette temaet.
+
+### Hvilke temaer tar programmene opp?
+Og det kan vi - kanskje. Med LDA - Latent Dirichlet Allocation - kan en estimere hvordan ett dokument består av flere tema, og ett tema består av flere ord på tvers av dokumenter. Så dermed kunne en - kanskje - se om f.eks. partiprogrammene tematiserer skole i ulik grad. 
+
+Algoritmen tar en DocumentTermMatrix, så vi finner igjen denne fra lenger oppe.
+
+```{r}
+model_1 = LDA(converted, k = 9)
+
+tema = tidy(model_1, matrix = "beta")
+
+tema_topp = group_by(tema, topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+ggplot(data = tema_topp, aes(reorder_within(term, beta, topic) , beta, fill = factor(topic))) + 
+  geom_col(show.legend = FALSE) + 
+  facet_wrap(~topic, scales = "free") +
+  coord_flip() + 
+  scale_x_reordered()
+
+```
+
+Viser seg at denne algoritmen identifiserer partiene, heller enn temaene innad i partiprogrammene. Dette gjelder uansett hvilken k vi setter på LDA-funksjonen: Det mest gjenkjennelige i dokumenthaugen er skillene mellom partiprogrammene.
+
+Hvis vi snur på flisa, og ser på sannsynlighetene for at en spesifikk tema hører til et spesifikt dokuments, ser vi dette veldig tydelig:
+
+```{r}
+tema_dokument = tidy(model_1, matrix = "gamma")
+
+ggplot(data = tema_dokument, aes(factor(topic), gamma)) +
+  geom_boxplot() +
+  facet_wrap(~document)
+```
+
+Bildet er riktignok ikke helt 100 % krystallklart: Høyres partiprogram har biter som også er identifisert i KrFs partiprogram
+
+##Oppsummert
+Når ulike algoritmer raskt lar seg kjøre, og outputen enkelt lar seg plotte, så er det lett å glemme det viktigste i en slik analyse: Selve analysen. Hva er det vi har sett her?
+
+De mest brukte ordene skiller seg ikke veldig fra hverandre, men alle partiene er selvsagt mest opptatt av seg selv. Det gjør også at når vi prøver å finne tverrgående tema, så feiler det - vi finner kun igjen partiprogrammene (med en interessant overlapp mellom H og KrF). Det kan ganske enkelt skyldes at datagrunnlaget er for lite - men det kan også tenkes at selv om de alle er like i de mest brukte ordene, så har de ulike nok ordvalg til at de framstår som distinkte. 
+
+Alle partiene har også mer unike saker, som de andre i mindre grad snakker om. Det er imidlertid uklart fra denne gjennomgangen hvor stor plass f.eks. samisk politikk tar for Oslo SV - men antakeligvis er bærekraftsmålene en viktig komponent hos MDG.

@@ -1,0 +1,239 @@
+---
+title: Noen eksempler på bruk av IMDis API
+author: Eivind
+date: '2019-03-24'
+slug: noen-eksempler-på-bruk-av-imdis-api
+categories:
+  - R
+tags:
+  - API
+  - datasett
+---
+
+IMDis [tall og statistikk-nettsider](https://www.imdi.no/tall-og-statistikk/) henter dataene sine om innvandring og integrering i kommuner, fylker og Norge fra et API.
+
+APIet er dessverre ikke dokumentert, men lar seg enkelt utforske ved hjelp av en nettleser-konsoll, f.eks. i Chrome. Her kommer et kort forsøk på litt forklaring. Datasettet bruker NLOD-lisensen.
+
+## Innhold i datasettet
+Datasettet har informasjon om innvandrere og integrering på en rekke områder i norske kommuner, næringsregioner, fylker, hele landet og bydeler i Oslo, og er tilgjengelig med NLOD-lisens (se nederst for lisens-betingelser). Noe kommer fra IMDi, men mesteparten kommer fra Statistisk sentralbyrå (SSB).
+
+IMDi tilgjengeliggjør dataene fra nettsidene i et krysstabellformat som er uhensiktsmessig for analyseformål, og dataene tilgjengeliggjøres derfor her (som et privat prosjekt) i et flatt format.
+
+__En advarsel__: Datasettene er kodet, og kodeboka er foreløpig ikke en del av dette repoet. Beskrivelser av data skal egentlig være tilgjengelig fra et API fra IMDi.no ("http://imdi.no/api/indikatorcarddescriptions" og "http://imdi.no/api/indikatordimensions"), men det ser p.t. ikke ut til å være tilfelle.
+
+## Dokumentasjon
+
+```{r, message = FALSE}
+#nødvendige pakker
+library(httr) 
+library(jsonlite)
+library(dplyr)
+library(knitr)
+library(here)
+library(ggplot2)
+
+#scripts
+source(here("content/scripts/imdi_api_function.R"))
+
+#theme for ggplot2
+theme_set(theme_minimal())
+```
+
+
+### Metadata 1 - hvilke tabeller finnes?
+
+En kan sende GET-spørringer for å få vite hvilke tabeller som finnes, og hvilke headere og header-grupper en tabell har.
+
+Her henter vi ut en oversikt over tabeller med GET fra httr-biblioteket. Så konverterer vi det til en data.frame fra JSON med fromJSON fra jsonlite-pakka. Tabellen framstilles med knitr::kable.
+
+```{r}
+url = "https://imdifakta.azurewebsites.net/api/v1/metadata/tables"
+test_tabeller = GET(url)
+df = data.frame(datasett = fromJSON(content(test_tabeller,"text",encoding="UTF-8")))
+kable(df)
+
+```
+
+APIet gir p.t. tilgang til 50 datasett
+
+### Metadata 2 - headere
+
+Hver tabell har "headere", eller variabelnavn, som f.eks. kommune_nr eller kjonn. Duisse kan spesifiseres nærmere i den faktiske spørringa etter data, og det er derfor viktig å vite hvilke alternativer en har.
+
+```{r}
+url = "https://imdifakta.azurewebsites.net/api/v1/metadata/headers/befolkning_alder"
+test_tabeller = GET(url)
+df = fromJSON(content(test_tabeller,"text",encoding="UTF-8"))
+kable(df$headers)
+```
+
+Datasettet befolkning_alder har 10 ulike variabler tilgjengelig.
+
+### Metadata 3 - headergrupper
+Kanskje vel så viktig som å vite hvilke variabler som er tilgjengelig, er å vite hvilke kombinasjoner av variabler og variabel-verdier som er tilgjengelig. F.eks. har en data på kommune_nr og kjonn (som da er en header-gruppe) separat fra data på fylke_nr og kjonn (som da er en annen header-gruppe). En kan da ikke spørre på kommune\_nr og fylke\_nr samtidig, så langt jeg veit.
+
+```{r}
+url = "https://imdifakta.azurewebsites.net/api/v1/metadata/headergroups/befolkning_alder"
+test_tabeller = GET(url)
+df = fromJSON(content(test_tabeller,"text",encoding="UTF-8"))
+str(df)
+```
+
+For de 9 variablene (Variabelen tabellvariabel er standard for alle) har man 4 ulike kombinasjoner, eller grupper: en med bydelNr, en med fylkeNr, en med kommuneNr, og en med naringsregionNr.
+
+### Faktiske data - en grunnleggende spørring
+Så til den faktiske data-spørringen. Den sendes med å poste en spørring til en nettadresse. Spørringen er formatert som JSON, det samme som utformatet tilbake.
+
+Spørringa inkluderer 
+
+- TableName, som er navnet på tabellen. 
+- Include, som definerer hvilke variabler som skal inkluderes. Defineres ut i fra en headergruppe.
+- Conditions, som kan brukes for å definere hvilke verdier som skal returneres for hver variabel. Hvis den ikke oppgis, kommer alle. I følge dokumentasjonen må den inneholde en eller flere verdier.
+- Exclude, som kan brukes til å ekskludere enkelte felt.
+
+
+```{r}
+#henter data fra query-api
+url = "https://imdifakta.azurewebsites.net/api/v1/data/query"
+data = 
+  '{"TableName":"befolkning_hovedgruppe",
+  "Include":
+    ["innvkat5","kjonn","fylkeNr","enhet","aar"],
+    "Conditions":
+      {"innvkat5":["innvandrere","bef_u_innv_og_norskf","norskfodte_m_innvf"],
+      "kjonn":["alle"],
+      "fylkeNr":["00"],
+      "enhet":["personer"]
+    }
+}'
+
+#ma ha med content_type_json() for a fa 200 ok
+test = POST(url,body=data,encode="json",verbose(),content_type_json())
+
+df = fromJSON(content(test,"text",encoding="UTF-8"))[[1]]
+head(df)
+```
+
+### Faktiske data - spørring for mer enn 500 svar
+Hvis APIet gir mer enn 500 svar tilbake, får en med en continuation-token, som må håndteres. Her er en funksjon som ser ut til å gjøre det greit.
+
+```{r}
+imdi_fetch_example = function(data){
+  temp_queryresult = POST("https://imdifakta.azurewebsites.net/api/v1/data/query",body=data,encode="json",verbose(),content_type_json())
+  temp_df = fromJSON(content(temp_queryresult,"text",encoding="UTF-8"))
+  if(length(temp_df)==1){
+    return(temp_df[[1]])
+  }
+  if(length(temp_df)>1){
+    temp_df_final = data.frame()
+    temp_df_final = bind_rows(temp_df_final,temp_df[[2]])
+    i = 0
+  }
+  #bruker en while-loop, og det er vel fy?
+  while(length(temp_df)>1){
+    i = i+1
+    temp_token = temp_df$continuation
+    temp_token_format = paste0('{','"continuation":"',temp_token,'",')
+    new_data = substring(data,2,nchar(data)+1)
+    new_data_query =paste0(temp_token_format,new_data)
+    temp_queryresult = POST("https://imdifakta.azurewebsites.net/api/v1/data/query",body=new_data_query,encode="json",verbose(),content_type_json())
+    temp_df = fromJSON(content(temp_queryresult,"text",encoding="UTF-8"))
+    if(length(temp_df)>1){
+      temp_df_final = bind_rows(temp_df_final,temp_df[[2]])
+      Sys.sleep(5) #høfflig å ikke spørre for mange ganger på kort tid, derfor sleep 5 sek.
+    }
+    if(length(temp_df)==1){
+      temp_df_final = bind_rows(temp_df_final,temp_df[[1]])
+      print(paste0("Fullført på ",i," repetisjoner"))
+    }
+  }
+  return(temp_df_final)
+}
+
+```
+
+### Faktiske data - sammenlikningsspørringer
+På (…)/api/v1/data/compare kan man sende inn en spørring basert på en tabell og en headergruppe. Endpointet brukes med å POSTe en spørring på forhåndsdefinert format til webserveren. Da inkluderes Compare som en verdi i spørringa, og fjernes Include, slik:
+
+
+```{r}
+url = "https://imdifakta.azurewebsites.net/api/v1/data/compare"
+data = 
+  '{"TableName":"befolkning_hovedgruppe",
+    "Conditions":
+      {"innvkat5":["innvandrere","bef_u_innv_og_norskf","norskfodte_m_innvf"],
+      "kjonn":["alle"],
+      "enhet":["personer"]
+    },
+    "Compare": {
+      "kommuneNr": ["0101"],
+      "fylkeNr": ["00"]
+    }
+}'
+
+#ma ha med content_type_json() for a fa 200 ok
+test = POST(url,body=data,encode="json",verbose(),content_type_json())
+
+df = fromJSON(content(test,"text",encoding="UTF-8"))[[1]]
+head(df)
+```
+
+Compare kan også ha med kun 1 verdi, f.eks. kommuneNr - men kan ta maksimalt 100 verdier.
+
+###Faktiske data - en spørring for å få ut alt i en tabell
+Det kan også være nyttig å hente ut en hel tabell, uten å måtte gå omveien om å kjenne til headergrupper, variabler, verdier og formatering av spørring. Med byggeklossene fra lenger opp kan en få til det.
+
+Det som hadde vært enda nyttigere, var om denne spørringa ga deg en advarsel om hvor lang tid det kom til å ta - for mange av tabellene er veldig store, og med maks 500 celler ut for hver spørring og 5 sek. pause mellom hver spørring blir det fort litt ventetid. Den første standard-forsøket med bosatt_anmodede har ca 20 år x 3 bosettingsverdier x 2 enheter x 430 kommuner = minst 90 spørringer = 10 minutter. 
+
+
+```{r, include = FALSE}
+test = imdi_fetch_table()
+str(test)
+```
+
+Det tilsier vel egentlig at en likegodt kan hente ut dataene en skal bruke, og ikke alle dataene. I begge disse eksemplene her må en først velge vekk noe, før en kan vise noe annet.
+
+```{r, echo = FALSE}
+df = filter(test,enhet=="personer",kommuneNr!="0000")%>%
+  mutate(.,tall = as.numeric(tabellvariabel),aar=as.numeric(aar))%>%
+  group_by(.,aar,bosetting)%>%
+  summarise(.,antall = sum(tall,na.rm=TRUE))%>%
+  mutate(.,antall = na_if(antall,0))
+
+ggplot(data=df)+
+  geom_line(aes(x=aar,y=antall,colour=bosetting))
+
+```
+
+
+```{r, echo=FALSE, fig.dim = c(6,15)}
+df = filter(test,enhet == "personer", bosetting == "vedtak")%>%
+  mutate(.,tall = as.numeric(tabellvariabel),aar=as.numeric(aar))
+
+ggplot(data = df, aes(x= kommuneNr, y = tall))+
+  geom_jitter(colour = "steelblue", alpha=0.3)+
+  geom_boxplot(alpha=0)+
+  coord_flip()
+
+```
+
+
+## Lisens
+Alle data (både fra SSB og IMDi) er tilgjengeliggjort med Norsk lisens for offentlige data (NLOD). Du har lov til:
+
+- å kopiere og tilgjengeliggjøre
+- å endre og/eller sette sammen med andre datasett
+- å kopiere og tilgjengeliggjøre en endret eller sammensatt versjon
+- å benytte datasettet kommersielt
+
+På følgende vilkår:
+- at du navngir lisensgiver slik lisensgiver ber om, men ikke på en måte som indikerer at disse har godkjent eller anbefaler deg eller din bruk av datasettet
+- at du ikke bruker dataene på en måte som fremstår som villedende, og heller ikke fordreier eller uriktig fremstiller dataene
+
+Med den forståelse:
+- at data som inneholder personopplysninger og er taushetsbelagt ikke er omfattet av denne lisensen og ikke kan viderebrukes
+- at lisensgiver fraskriver seg ethvert ansvar for informasjonens kvalitet og hva informasjonen brukes til
+
+Norsk lisens for offentlige data (NLOD) er tilgjengelig både på norsk og på engelsk. Følg disse lenkene for å lese den juridiske lisensteksten:
+[Norsk lisens for offentlige data (NLOD): ](https://data.norge.no/nlod/no/2.0)
+[Norwegian Licence for Open Government Data (NLOD): ](https://data.norge.no/nlod/en/1.0)

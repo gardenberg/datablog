@@ -1,0 +1,127 @@
+---
+title: "Ble 2019 et bra løpeår?"
+author: EIvind
+date: '2020-01-03'
+slug: ble-2019-et-bra-løpeår
+categories:
+  - løping
+  - R
+tags: []
+---
+
+__Hva handler denne artikkelen om?__ _Noen tanker om hvorfor treningsdata kan være interessant å se på, og så en kikk på noen nøkkeltall for 2019_
+
+2019 er da godt overstått, og 2020 påbegynt. Det er som seg hør og bør et passende tidspunkt å gjøre opp status for det siste løpeåret (selv om nyttårsgrensa strengt tatt er temmelig arbitrær - trening bør du få deg hele året uansett, så hvilket som helst anna tidspunkt kunne også egna seg).
+
+Jeg har tidligere tatt en kikk på løpsdataene fra Runtastic [her](https://suppe-og-analyse.netlify.com/post/kan-en-l%C3%B8pe-raskere-med-r-rasker/) og [her](https://suppe-og-analyse.netlify.com/post/forl%C3%B8psanalyse-p%C3%A5-treningsdata/). 
+
+Hvis det skal være interessant å se på løpsdata, må det ha en tydelig funksjon. Det er riktignok gøy å lage pene grafer med pene farger, men da kunne jeg likegodt gått tilbake til å finne SSB-data.
+
+## Motivasjon gjennom å se hvordan det går
+*For det første kan det bidra til motivasjon*: spillifisering av trening kan kanskje gjøre meg mer motivert, ved å vise hvor langt jeg har løpt, og inspirere meg til å løpe mer enn sist. Runtastic minner meg på at jeg skal løpe, gir meg oppdateringer på hvor langt jeg har løpt, med videre. 
+
+Denne funksjonen vil bli langt mindre med en årsrapport, vil jeg tro - for å få full effekt av noe slikt trenger en hyppigere oppdateringer som holder deg i gang. Når det er gått et år er det for seint å finne ut at du har gjort fryktelig mye mindre enn året før. Et dashboard ville vært bedre for denne typen formål - og det finner jeg vel allerede i Runtastic. 
+
+## Forståelse, som kan gjøre meg i stand til å løpe bedre 
+*For andre kan det gi forståelse, som igjen gir meg rom for forbedringer*: Gjennom den tidligere kikken på treningsdataene mine lærte jeg at aktiviteten har svingt mye i de årene jeg har løpt. Det er lite sesongvariasjon, men mer motivasjons- og livshendelsesvariasjon: datamønstrene på når jeg har løpt mer, lenger og raskere, samvarierer temmelig bra med større ting som har skjedd - som barn, nye jobber, og flytting. Når noe stort inntreffer, har jeg slutta å trene - og da har det tatt meg tid å begynne igjen. 
+
+Motivasjon og vaner er i det hele tatt en komplisert affære. Jeg antar at jeg funker slik at jo mindre jeg må motivere meg selv hver eneste gang for å gå og trene, jo lettere er det å fortsette. Det vil si, jo mer innebygde vaner jeg klarer å gjøre det til ("alltid på en tirsdag", "alltid på seminar", osv.), jo lettere vil det bli. Forsøket med å se på treningsvarighet som forløp indikerte at det muligens kunne være slik - hvis jeg holder jevnlig trening i mer enn rundt to måneder, klarer jeg å holde på i langt flere måneder. 
+
+Formodentlig er det da også slik at hvis jeg trapper ned treninga, så blir det tyngre å fortsette, og lettere å falle fra.Jeg lærte også at jeg er ganske langt unna målet mitt om 3 treningsøkter per uke.
+
+Det er vanskelig å si om løpsdeltakelse har en tydelig motiverende faktor - det ser ut til å kunne slå ulikt ut: av og til har jeg trent meg opp til et løp, og så trent drastisk mye mindre etterpå. Andre ganger har jeg fortsatt treninga. Andre ganger har jeg ikke trent noe særlig før et løp, men økt innsatsen i etterkant. 
+
+På den positive sida ser jeg at jeg over åra har klart å øke puls og hastighet på treningsøktene, noe jeg glatt tolker som at jeg har klart å få mer effekt ut av treningsøktene. 
+
+## Hva så? Hva er de viktigste tingene å ta med seg fra løpsåret 2019?
+
+- antall løpsaktiviteter: det viktigste er å få beveget seg, lite eller mye. Flere løpeturer er altså bra.
+- antall kilometer løpt: grovt sett vil det være bra å løpe lengre, heller enn kortere. 
+- kvalitet: uker med mer enn 75 minutter løping, dvs. uker hvor jeg når Helsedirektoratets anbefaling til høy aktivitet.
+
+### Dataene
+
+```{r, include = FALSE}
+library(tidyverse)
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+options(scipen = 100)
+
+df <- read.csv2(here::here("content/data/runs_04012020.csv"), stringsAsFactors=FALSE)
+df = filter(df, year != 2020)
+
+```
+
+
+## Antall løpsaktiviter
+
+```{r}
+ggplot(data = df) + 
+  geom_bar(aes(x = as.factor(year))) + 
+  labs(x = "År", y = "Antall løpeturer", title = "I 2019 løp jeg 82 turer", subtitle = "Nesten like mange som i 2018")
+```
+
+
+## Antall kilometer løpt
+
+```{r}
+ggplot(data = df) + 
+  geom_bar(aes(x = as.factor(year), weight = distance)) + 
+  labs(x = "År", y = "Hvor langt jeg løp", title = "I 2019 løp jeg ca. 700 kilometer", subtitle = "100 kilometer mindre enn 2018, men langt mer enn tidligere år")
+
+ggplot(data = df, aes(x = as.factor(year), y = distance)) + 
+  geom_boxplot() + 
+  geom_jitter(colour = "steelblue", alpha = 0.2) + 
+  labs(x = "År", y = "Hvor langt jeg løp", title = "Medianturen i 2019 var kortere enn i 2019", subtitle = "2019 lignet mer på 2017 i lengden på løpeturer")
+
+```
+
+## Kvalitet: Uker med mer enn 75 minutter løping
+I følge [Helsedirektoratet](https://www.helsedirektoratet.no/faglige-rad/fysisk-aktivitet-for-barn-unge-voksne-eldre-og-gravide/fysisk-aktivitet-for-voksne-og-eldre#voksne-og-eldre-bor-vaere-fysisk-aktive-i-minst-150-minutter-med-moderat-intensitet-eller-75-minutter-med-hoy-intensitet-per-uke) bør voksne være i fysisk aktivitet i 150 minutter moderat intensitet i uka, eller 75 minutter med høy intensitet. Høy intensitet tilsvarer løping.
+
+Ved opptelling ser jeg at mange av ukene med trening, har mer enn 75 minutter med trening i seg. Men de langt fleste ukene er imidlertid uten noen registrert trening.
+
+```{r}
+temp = group_by(df, year, week) %>%
+  summarise(antall_minutter = sum(duration_min, na.rm = TRUE)) %>%
+  ungroup()
+
+temp = left_join(expand(temp, year, week = 1:52), temp) %>%
+  mutate(yearweek = ifelse(nchar(week) == 1, paste0(0, week), week),
+         yearweek = paste0(year, yearweek),
+         id = seq_along(yearweek),
+         treningsdose = ifelse(antall_minutter >= 75, "Over 75 min", "Under 75 min")
+         )
+
+temp$treningsdose[is.na(temp$treningsdose)] = "Under 75 min"
+
+ggplot(data = temp) + 
+  geom_bar(aes(x = treningsdose)) + 
+  facet_wrap(~year) + 
+  labs(x = "Trening i over eller under 75 minutter i uka?", y = "Antall", title = "Tre av fem uker  er over Helsedirektoratets anbefaling")
+
+ggplot(data = temp, aes(x = id, y = antall_minutter)) + 
+  geom_point(aes(colour = treningsdose)) + 
+  geom_smooth() +
+  geom_hline(aes(yintercept = 75)) + 
+  geom_vline(aes(xintercept = 52)) +
+  geom_vline(aes(xintercept = 104)) +
+  geom_vline(aes(xintercept = 156)) +
+  geom_vline(aes(xintercept = 208)) +
+  geom_vline(aes(xintercept = 260)) +
+  annotate("text", label = "2015", x = 26, y = 350) + 
+  annotate("text", label = "2017", x = 130, y = 350) +
+  annotate("text", label = "2019", x = 234, y = 350) +
+  labs(x = "Tid", y = "Trening per uke (minutter)", title = "Mange uker når anbefalt treningsdose i 2019", subtitle ="Men nedadgående trend mot slutten av året")
+
+```
+
+## Hva tilsier dette at jeg skal klare å få til i 2020?
+Hvert år, litt bedre, litt mer. Ut ifra dette vil jeg prøve å få til:
+- Opp mot 40 av 52 uker med anbefalt aktivitetsmengde,
+- Det tilsier også at jeg bør øke antallet løpeturer med en 10-12 flere enn i 2019,
+- Det burde også tilsi at jeg kan løpe omlag 70 kilometer lengre.
+
+Men! Etter en liten test av HelseNorges ["Hvordan har du det?"-test](https://helsenorge.no/hvordan-har-du-det), har jeg fått enda flere tips om at jeg bør innføre jevnlig styrketrening. Hvis jeg skal gjøre det, går det fort på bekostning av løping - og i hvert fall mer løping enn i dag.

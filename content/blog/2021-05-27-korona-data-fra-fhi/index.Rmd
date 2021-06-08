@@ -1,0 +1,106 @@
+---
+title: Korona-data fra FHI
+author: Eivind
+date: '2021-05-27'
+slug: []
+categories: []
+tags: []
+---
+
+
+```{r}
+#libraries
+library(httr)
+library(jsonlite)
+library(tidyverse)
+
+```
+
+
+```{r}
+#hent kodeverk for fylker og kommuner
+url = "https://statistikk.fhi.no/api/msis/kodeverk/fylkerOgKommuner"
+query_result = GET(url)
+enhetsliste = unnest(fromJSON(content(query_result,"text",encoding="UTF-8")), cols = kommuneListe, names_repair = "universal") %>%
+  rename(fhi_kid = id...2,
+         knr = verdi...3,
+         knavn = beskrivelse...4,
+         fhi_fid = id...5,
+         fnr = verdi...6,
+         fnavn = beskrivelse...7
+         ) %>%
+  select(-bydelListe)
+
+#spørremetode
+url = "https://statistikk.fhi.no/api/msis/etterDiagnoseFordeltPaaMaaned?fraAar=2020&tilAar=2020&diagnoseKodeListe=713&fylkeKodeListe=42&kommuneKodeListe=4216&summerDiagnose=false&summerAlder=false&summerKjonn=false&summerGeografi=false&summerSmittested=false&summerSmittemaate=false&summerMaaned=false"
+query_result = GET(temp_url)
+resultater = fromJSON(content(query_result,"text",encoding="UTF-8"))
+
+kommune_query_builder = function(kommunenr = "4216"){
+  temp_url = paste0(
+    "https://statistikk.fhi.no/api/msis/etterDiagnoseFordeltPaaMaaned?",
+    "fraAar=2020&tilAar=2020&",
+    "diagnoseKodeListe=713&",
+    "kommuneKodeListe=",
+      kommunenr,
+    "&",
+    "summerDiagnose=false&summerAlder=false&summerKjonn=false&summerGeografi=false&summerSmittested=false&summerSmittemaate=false&summerMaaned=false"
+    )
+}
+
+url = kommune_query_builder("0301")
+query_result = GET(url)
+resultater = fromJSON(content(query_result,"text",encoding="UTF-8"))
+
+df = select(enhetsliste, knr, knavn, fnr)
+i = 1
+for(i in 1:nrow(enhetsliste)){
+  temp_query = kommune_query_builder(df$knr[i])
+  temp_result = fromJSON(content(GET(temp_query),"text",encoding="UTF-8"))
+  if(nrow(temp_resultat)>0){
+    df = bind_rows(df, temp_resultat)
+  }
+}
+
+
+#for spesifisering av måned
+url_spesifisert_måned = "https://statistikk.fhi.no/api/msis/etterDiagnoseFordeltPaaMaaned?fraAar=2020&tilAar=2020&diagnoseKodeListe=713&fylkeKodeListe=42&kommuneKodeListe=4216&maanedNrListe=1&maanedNrListe=2&maanedNrListe=3&maanedNrListe=4&maanedNrListe=5&maanedNrListe=6&maanedNrListe=7&maanedNrListe=8&maanedNrListe=9&maanedNrListe=10&maanedNrListe=11&maanedNrListe=12&summerDiagnose=false&summerAlder=false&summerKjonn=false&summerGeografi=false&summerSmittested=false&summerSmittemaate=false&summerMaaned=false"
+
+
+
+```
+
+
+```{r}
+temp_df = fromJSON(content(temp_queryresult,"text",encoding="UTF-8"))
+```
+
+```{r}
+#litt scripting etter å ha kjørt spørrescriptet som en job
+
+df = fhi_smittesquery_results$smittetall
+
+temp = filter(df, fordeltPaa == "Januar") %>%
+  select(knr, knavn, tilfeller_januar = antall) %>%
+  left_join(enhetsliste, .) %>%
+  mutate(tilfeller_januar = ifelse(is.na(tilfeller_januar) == TRUE, 0, tilfeller_januar),
+         flere_enn_0 = ifelse(tilfeller_januar > 0, TRUE, FALSE)
+         )
+
+
+summary(temp$flere_enn_0)
+
+
+ggplot(data = temp, aes(x = tilfeller_januar)) +
+  geom_histogram(binwidth = 1)
+
+tabell = group_by(temp, tilfeller_januar) %>%
+  summarise(antall_kommuner = n()) %>%
+  arrange(tilfeller_januar) %>%
+  mutate(
+    kumsum = cumsum(antall_kommuner),
+    kumandel = kumsum/max(kumsum)
+  )
+
+```
+

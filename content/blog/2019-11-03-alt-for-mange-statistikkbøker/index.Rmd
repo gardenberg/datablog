@@ -1,0 +1,83 @@
+---
+title: Alt for mange bøker om dataanalyse
+author: Eivind
+date: '2019-11-03'
+slug: alt-for-mange-dataanalyseboker
+categories:
+  - R
+  - datascience
+  - statistikk
+  - bok
+tags: []
+---
+
+__Hva handler denne artikkelen om?__ _Hylla mi er full av bøker - alt for mange bøker. Jeg snakker om de beste_
+
+Jeg plukka først opp R i 2010. Rett etter studiene i min første jobb, ble jeg satt til å gjøre div. analyser av data i AgriAnalyse. Med en del frihetsgrader til å selv velge metoder og formidlingsmåter, fant jeg raskt ut at datavisualiseringer var noe folk var gira på. Ikke at jeg var god på det - men noen raske internettsøk viste at R var et program mange brukte for å lage kart, og trekke ut data fra figurer slik at de kunne selv bruke figurene. Det hjalp også at vi ikke hadde råd til dyre SPSS-lisenser for alle ansatte. 
+
+Siden da har det hopa seg opp med bøker i bokhylla mi, både den fysiske og den digitale. Nå har det gått noen år, og jeg trenger derfor å rydde litt opp i hylla mi. Her er resultatet av ryddinga - hva er det jeg kan tenke meg å beholde? Jeg skiller mellom fem kategorier/bokhyller:
+
+- Innføringer i statistikk
+- Innføring i R-programmering
+- Mer avanserte statistiske emner
+- Spesifikke R-pakker
+- Grafikk
+
+## Grunnleggende innføring i statistikk
+ 
+**Skog (2009). Å forklare sosiale fenomeneter. En regresjonsbasert tilnærming.** [Forlagsside her](https://www.gyldendal.no/Faglitteratur/Samfunnsfag/Statistikk-metode/AA-forklare-sosiale-fenomener). En helt grunnleggende innføring i kvantitativ metode for samfunnsvitere. Skog er innom epistemologiske byggesteiner for kausale slutninger, grunnleggende sannsynlighetsteori og lineær og logistisk regresjon. Han knytter det sammen på en god måte, noe som gjør det mulig å forstå hvorfor en bør bruke metodene en blir lært å bruke. 
+
+**Poldrack (2019). Statistical Thinking for the 21st Century**. [Bookdown-bok her](http://statsthinking21.org/index.html). En innføring i statistikk, som også viser til en del nyere utvikling i "data science"-delen av feltet. Det kanskje viktigste bidraget er at boka vektlegger virkelige dataeksempler, inkludert simuleringer og eksempler for de statistiske konseptene. 
+
+**Peng (2016). Exploratory Data Analysis with R.** [Bookdown-bok her](https://bookdown.org/rdpeng/exdata/). Alle statistikkbøker begynner med å si at du må se på dataene dine. Her er en grundig innføring i hvordan en kan gjøre det, med R.
+
+**Dalgaard (2008). Introductory statistics with R.** God gammeldags bok, uten nettside og slikt. Dekker over både grunnleggende, klassisk R og grunnleggende statistiske metoder - fra deskriptiv statistikk og visualisering, til multivariat regresjon, testing og overlevelsesanalyse. 
+
+**Gelman og Hill (2009). Data Analysis Using Regression and Multilevel/Hierarchical Models.** Forfatternes bok-side [her](http://www.stat.columbia.edu/~gelman/arm/). Kjempegod innføring i regresjon og flernivå-analyse. Her er både matematisk formalisme og kode, forklart på en fornuftig og forståelig måte. Å kalle dette en grunnleggende innføring er delvis en løgn, for utover i boka tar det av med Bayesiansk flernivåanalyse, BUGS og i det hele tatt.
+
+**Lindeløv (2019). Common statistical tests are linear models (or: how to teach stats).** Ikke en bok, men en ganske lang [bloggpost](https://lindeloev.github.io/tests-as-linear/). Lindeløv gjennomgår hvordan alle (nesten) statistiske tester kan oppsummeres som lineære modeller. Ideen er at studenter som skal lære statistikk bør lære regresjon og lineær modell først, som en grunnleggende byggestein. Ikke sist (eller kanskje mer i midten?) som i dag, etter at en lærer en hel haug med ulike tester for ulike kombinasjoner av variabeltyper. Ettersom jeg fortsatt ikke husker når jeg skal bruke ulike korrelasjoner, ensidig, tosidig, og med ulike fordelinger - så kan jeg like dette. 
+
+**Caffo (udatert). Statistical inference for data science.** [Leanpub-publikasjon](https://leanpub.com/LittleInferenceBook) som hører med til et kurs i [Statistical Inference](https://www.coursera.org/learn/statistical-inference) i Johns Hopkins "Data Science Specialization"-kurs på Coursera. Dette var ei kursrekke jeg prøvde meg på noen ganger, uten å komme i mål - og jeg falt helt av når Coursera lukket plattformen sin mer, og la mer opp til obligatorisk oppmøte, scanning av pass, og så videre. Boka er grei, men fungerer mer som en oppfriskning, ettersom den er mer som notater fra forelesninger enn ei faktisk bok. 
+
+## Innføring i R-programmering
+
+**Grolemund og Wickham (udatert). R for Data Science**. Bookdown [her](https://r4ds.had.co.nz/). Den definitive guiden til R-programmering med tidyverse-programmering, og tar deg fra arbeidsflyt, databearbeiding, programmering, og modellering til formidling. 
+
+**Peng (2019). R Programming for Data Science.** [Bookdown her](https://bookdown.org/rdpeng/rprogdatascience/). Roger Pengs (kjent fra [Simply Statistics](https://simplystatistics.org/) og [Not So Standard Deviations-podcasten](http://nssdeviations.com/)) innføring i hvordan en bruker R som programmeringsspråk. Var også en del av Coursera-kurset jeg tok.
+
+**Long og Teetor (2019). R Cookbook.** Bookdown [her](https://rc2e.com/). Oppskrifter på en rekke utfordringer i R. Ikke en innføring i statistikk, men mange praktiske eksempler på hvordan problemer kan løses.
+
+**Wickham (udatert). Advanced R.** Bookdown [her](https://adv-r.hadley.nz/). Wickhams innføring i R-programmering og R-språket.
+
+## Mer avanserte statistiske emner
+
+**Friedman, Hastie og Tibshirani (2009). The Elements of Statistical Learning. Data Mining, Inference and Prediction.** Springer-sida [her](https://www.springer.com/gp/book/9780387848570). Mer avansert tilnærming til både supervised og unsupervised læring, på en forståelig måte. Jeg har særlig brukt kapittelet om Support Vector Machines, men også trærne.
+
+**Coghlan (2012). Little Book of R for Time Series.** Også tilgjengelig som [nettside](https://a-little-book-of-r-for-time-series.readthedocs.io/en/latest/). En superenkel innføring i tidsserier for R, mer programmeringssida enn statistikk-sida. 
+
+## Spesifikke R-pakker
+
+**Kuhn (2019). The caret package.**[Her](https://topepo.github.io/caret/index.html). Innføring i caret - classification and regression training, et sett av funksjoner som gjør prediktiv modellering lettere. 
+
+**Silge og Robinson (2019). Text Mining with R. A Tidy Approach.** Bookdown [her](https://www.tidytextmining.com/). En innføring i tekstanalyse med R, i et tidy format. Det er ganske grunnleggende, men svært nyttig og en god innføring. 
+
+**Xie, Thomas og Hill (2019). blogdown: Creating Websites with R Markdown.** [Her](https://bookdown.org/yihui/blogdown/). Innføring i blogdown-pakken og infrastrukturen en trenger for å etablere en RMarkdown-drevet blogg. Som denne.
+
+## Grafikk
+
+**Chang (2019). R Graphics Cookbook, 2nd edition. Tilgjengelig [her](https://r-graphics.org).** En haug med oppskrifter på hvordan praktiske visualiseringsproblemer skal løses. Ofte finner jeg gode svar her, og jeg liker kodestilen - når jeg husker å lete. Ofte har jeg imidlertid andre problemer - jeg trenger et svar fort, og Google er da et bedre sted å spørre. Vanskeligere: når jeg vet hvilken oppgave jeg har, men ikke hvilken visualisering som er egnet for å løse den. Da er Unwins bok bedre.
+
+**Unwin (2015). Graphical Data Analysis with R.** Nettsida til boka ligger [her](http://www.gradaanwr.net/). Boka er organisert etter oppgave (utforske kategoriske data, utforske tidsserier, vise sammenhenger, mm), og ikke graftype.
+
+## Bøker om praktisk dataarbeid
+
+**Baker (udatert). Practical Data Cleaning. 19 Essential tips to scrub your dirty data and keep your boss happy.** [Leanpub-publikasjon](https://leanpub.com/practicaldatacleaning). 19 fornuftige tips til arbeid med data, basert på Excel.
+
+**Leek (udatert). The Elements of Data Analytic Style.** [Leanpub-publikasjon](https://leanpub.com/datastyle). Grei sjekkliste for data-analyseprosjekter. Ikke spesielt dyptpløyende, og ganske grunnleggende - men det er også kjekt.
+
+**Wickham (udatert). The tidyverse style guide.** [Her](https://style.tidyverse.org/). Guide for kodestilen "tidyverse".
+
+## Utdaterte bøker
+
+**Kuhnert og Venables (2005). An introduction to R. Software for statistical modeling and computing.** Tilgjengelig f.eks. [her](http://www2.ims.nus.edu.sg/preprints/2006-34.pdf). Fin eksempel-basert introduksjon til R, som jeg brukte mest til å få et grunnleggende innblikk i hva dette programmet var, hvordan jeg kunne tenke om datatyper, kontrollstrukturer (dvs. programmeringsaspekter), og så videre. Den er fra 2005, før RStudio, tidyverse, RMarkdown - og også før Stackoverflow slo til og utkonkurrerte den ekstremt sinna R-help epostlista.  
+

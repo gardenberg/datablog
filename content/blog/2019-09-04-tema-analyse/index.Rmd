@@ -1,0 +1,167 @@
+---
+title: Positive politikere eller negative nabolagsmasere? Stemningsanalyse av partiprogram
+author: Eivind
+date: '2019-09-04'
+slug: tema-analyse
+categories:
+  - R
+tags: []
+---
+
+__Hva handler denne artikkelen om?__ _En kikk på valgprogrammene for kommunevalget i Oslo, og hvilke stemninger som finnes der_
+
+Hvordan kan man maskinelt forstå en tekst? I [den forrige artikkelen](https://suppe-og-analyse.netlify.com/post/tekstanalyse-av-valgprogram/) såg jeg på hvilke ord som var mest brukt, i ulike varianter. Hvor godt likner det på en menneskelig måte å lese noe på? Kanskje litt - en legger jo merke til hvilke ord som går igjen, og særlig når det er beskrivelser av emner. 
+
+En anna menneskelig måte å lese en tekst på, er å se på stemningen i en tekst: hvilke følelser brukes her - positive eller negative? Eller noe mer komplisert? Noe mer komplisert klarer jeg ikke her, så det snakker jeg ikke mer om. 
+
+Vi bruker AFINN-koda ordbok for å si noe om stemningen i partiprogrammene. Gitt at den ordboka gir et godt bilde av stemningen i programmene (noe som ikke er gitt), så ser vi på følgende:
+
+- Hva er den gjennomsnittlige stemninga i tekstene?
+- Hvordan ser variasjonen ut mellom partiene?
+
+```{r, warning = FALSE, message = FALSE}
+suppressPackageStartupMessages(library(tidyverse))
+library(tidytext)
+library(here)
+library(tm)
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+```
+
+##Datagrunnlaget
+Alle partiene har PDF-filer av valgprogrammene sine for Oslo tilgjengelig. PDF-filer lar seg lese inn, men krever litt tygging for å få fjerna punktsetting, nummer og lignende. 
+
+```{r, warning = FALSE, message = FALSE}
+#med TM
+mappe <- here("content/data/valgprogram")
+
+# lag et korpus fra pdf-filene
+converted <- VCorpus(DirSource(mappe), readerControl = list(reader = readPDF, language = "nb")) %>% 
+  DocumentTermMatrix(., control = list(language = "nb", 
+                                       removePunctuation = TRUE,
+                                       removeNumbers = TRUE, 
+                                       stopwords = stopwords("no")
+                                       ))
+
+#opprydding
+#fjerner .pdf-suffixet
+df_programmer = tidy(converted) %>%
+  mutate(., document = gsub(".pdf", "", document, fixed = TRUE))
+
+#setter bedre navn på variablene
+names(df_programmer) = c("parti", "term", "antall")
+```
+
+En tekst består av summen av ord, og en teksts stemning består av summen av ordenes stemning. For å fastslå stemning er en mulig tilnærming å bruke et leksikon eller ordbok: noen har koda et sett med ord, og hvilken stemning de utgjør. For norsk har jeg funnet Finn Årup Nielsens ordbok fra 2011 på Github, AFINN ([fork](https://github.com/gardenberg/afinn) her). Den kan leses inn på denne litt clunky måten (regex er ikke min sterke side).
+
+Disse dataene koder ord på en skala fra -5 (mest negativ) til +5 (mest positiv)
+
+```{r, warning = FALSE, message = FALSE}
+#sentiment-data
+sentiment <- read_delim(here("content/data/AFINN-no-165.txt"), "|", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
+sentiment$verdi = parse_number(sentiment$X1)
+sentiment$tekst = gsub(pattern = "[-][012345]|[012345]", replacement = "", x = sentiment$X1)
+sentiment$tekst = gsub(pattern = "\t", replacement = "", x = sentiment$tekst)
+sentiment = select(sentiment, -X1)
+
+#fjerner litt krøll - manglende verdier og ett ord med verdi 8
+sentiment = filter(sentiment, is.na(verdi) == FALSE) %>%
+  filter(., verdi < 6)
+```
+
+Det er 3 211 ord i ordboka. Tabellen under lister opp antallet ord i hver verdi-kategori. Det er kun 13 ord som er mest negative, og 4 ord i den mest positive kategorien. De fleste ordene er å finne i -2-kategorien. Faktisk ser det ut til at om lag 2 000 av ordene er negative, mens nærmere 1 000 er positive. Er dette en trend ved det norske språket, eller ved ordboka? Jeg vil anta det siste.
+
+```{r, echo = FALSE}
+#hvor mange ord er i hver kategori
+temp = group_by(sentiment, verdi) %>%
+  summarise(., antall = n()) %>%
+  qplot(data = ., x = verdi, y = antall, geom = "col") + 
+  scale_x_continuous(breaks = seq(from = -5, to = 5, by = 1))
+temp
+```
+
+Vi tar et tilfeldig utvalg på ett ord fra hver verdikategori: 
+
+```{r}
+temp = group_by(sentiment, verdi) %>%
+  sample_n(., 1)
+knitr::kable(temp)
+```
+
+Dette er definitivt ord som brukes - men i et politisk program? Neppe relevant med de mest negative ordene, i hvert fall, og neppe heller de mest positive. Ved første iterasjon fant jeg også at ordet "som" er kodet med +2. "Som" er jo ikke et spesielt positivt ord, det er et pauseord, et stoppord - og dermed må stoppordene fjernes også denne gangen.
+
+Ved hjelp av en inner join smelter vi ordboka sammen med ordene i partiprogrammene:
+
+```{r}
+df = inner_join(sentiment, df_programmer, by = c("tekst" = "term"))
+
+#en utfordring her er at vi blander verdien på en variabel og antallet observasjoner
+#bør ekspanderes
+df_utvida = uncount(df, antall)
+```
+
+```{r, echo = FALSE}
+#antall ord i programmene
+nrow(count(df_programmer, term, wt = antall))
+#antall ord i programmene som har en stemningskode
+nrow(count(df, tekst, sort = TRUE, wt = antall))
+```
+
+
+Av de 3 211 ordene i AFINN-ordboka, er 644 ord i bruk i partiprogrammene. Sagt på en anna måte -  av de 14 434 ordene i programmene, er det 644 ord som finnes igjen i AFINN. Gir de koda ordene et representativt utvalg? Tja, vanskelig å si - mange av ordene som ofte brukes kan antas å være ganske nøytrale. Men det kan også være at politisk sjargong er mer spesialisert, og har andre positive og negative ord enn det generelle språket. Det kan også være at det er har andre nyanser?
+
+##Hva er de mest stemningsladde ordene i partiprogrammene?
+```{r}
+temp = count(df, tekst, sort = TRUE, wt = antall) %>%
+  left_join(., sentiment) %>% #hekter også på ordene igjen
+  top_n(., 10, n)
+knitr::kable(temp)
+```
+
+De ti mest brukte ordene er positive. De mest brukte positive ordene er "sikre", "bedre" og "styrke", alle med en verdi på +2, mens god er koda som +3 (vurderinga som ligger bak at god er sterkere positivt enn bedre skal jeg ikke gå inn i). 
+
+##Hva er den gjennomsnittlige stemninga i partiprogrammene?
+Hvis vi så beregner gjennomsnittlig stemning i de ulike partienes programmer, og plotter denne, får vi den følgende figuren:
+
+```{r, echo = FALSE}
+temp =  group_by(df_utvida, parti) %>%
+  summarise(mean = mean(verdi))
+
+ggplot(data = temp) + 
+  geom_col(aes(x = fct_reorder(parti, mean), y = mean)) + 
+  coord_flip() + 
+  labs(title = "Høyre og KrF er de mest positive", subtitle = "Rødt og SV de mest negative", x = "Parti", y = "Gjennomsnittlig stemning")
+```
+
+Høyre er det gjennomsnittlig mest positive partiet, med +1,3 stemning. Forskjellen ned til KrF og SP er bitteliten. Rødt er det mest negative, på +0,6, men også de er positivt innstilt - sammen med SV (+0,8) og FrP (+0,9). 
+
+Spennet fra Høyre ned til Rødt er på 0,7 stemning, altså under en hel stemningsverdi på kodeskalaen. Det er ikke mye - og med disse gjennomsnittene forsvinner mye av variasjonen. Hvordan ser spredninga ut for de enkelte partiene?
+
+```{r}
+#skal telle opp antall ord assosisert med hver enkelt følelses-verdi
+temp = group_by(df_utvida, parti, verdi) %>%
+  summarise(., antall = n()) %>%
+  mutate(., andel = antall / sum(antall))
+
+ggplot(data = temp) +
+  geom_col(aes(x = verdi, y = andel)) +
+  facet_wrap(~parti) +
+  scale_x_continuous(breaks = seq(from = -5, to = 5, by = 1))
+```
+
+Alle partiene bruker positive ord +2 mest, fulgt av +1. Rødt, SV og FrP ser ut til å ha noe større andel negative ord i sine program. Det ser vi også i boksplottet under, hvor medianen for disse tre partiene ligger på ord med +1, mens den for de øvrige partiene ligger på +2. De negative følelsene er for uteliggere å regne (dvs. mer enn 1,5 ganger avstanden mellom første og tredje kvartil). De negative følelsene er innafor denne avstanden for Rødt, SV og FrP. 
+
+Dette gir mening - Rødt, SV og FrP er typisk mer kritisk til det bestående, og ønsker da kanskje relativt sett større endringer i Oslo enn andre partier. Det gir bittelitt mindre mening i et lokalvalg i Oslo, hvor Rødt og SV jo har utgjort en del av det bestående de siste fire årene. Men det samme kunne man jo sagt om FrP, som sitter i Regjering på sjette året. En anna vinkling på dette er at det er større variasjon i følelsene i FrP, SV og Rødt. 
+
+
+```{r}
+ggplot(data = df_utvida, aes(x = fct_reorder(parti, verdi, .fun = mean), y = verdi)) + 
+  geom_jitter(colour = "steelblue", alpha = 0.1) + 
+  geom_boxplot(alpha = 0.5) + 
+  coord_flip() + 
+  scale_y_continuous(breaks = seq(from = -5, to = 5, by = 1)) + 
+  labs(x = "Parti", y = "Stemning")
+```
+

@@ -1,0 +1,95 @@
+---
+title: 'Hvor populære blir navnene?'
+author: Eivind
+date: '2020-10-14'
+slug: hvor-populære-blir-navnene
+categories:
+  - statistikk
+tags:
+  - R
+---
+
+
+
+<p><strong>Hva handler dette om?</strong> <em>SSBs navnestatistikk er den mest populære statistikken de har. Hvordan ser den ut? Og lar det seg gjøre å lage noen lure framskrivninger for et par navn?</em></p>
+<div id="data" class="section level1">
+<h1>Data</h1>
+<p>Aller først laster jeg inn data på alle jentenavn på fødte fra 1880 til 2019, fra <a href="https://www.ssb.no/statbank/table/10467/tableViewLayout1/">SSBs statistikkbank</a>.</p>
+<pre class="r"><code>#data
+df &lt;- read_delim(here(&quot;content/data/navnestatistikk/PersonerProsent.csv&quot;), &quot;;&quot;, escape_double = FALSE, 
+                 locale = locale(decimal_mark = &quot;,&quot;, grouping_mark = &quot;|&quot;, encoding = &quot;ISO-8859-1&quot;),
+                 trim_ws = TRUE, skip = 1, na = c(&quot;.&quot;, &quot;..&quot;)) %&gt;%
+  select(fornavn, år, andel = `Andel av fødte (prosent)`) %&gt;%
+  mutate(., andel = parse_number(andel))</code></pre>
+<pre><code>## Parsed with column specification:
+## cols(
+##   fornavn = col_character(),
+##   år = col_double(),
+##   `Andel av fødte (prosent)` = col_character(),
+##   Fødte = col_double()
+## )</code></pre>
+<p>Dette datasettet har informasjon om andelen av nyfødte som har fått ett av 990 fornavn over 140 år, totalt 138 600 observasjoner. Popularitet er målt med andel, formodentlig andel av alle navn gitt til ei nyfødt jente det året. En rask opptelling viser at andelene innafor hver enkelt år ikke summerer til 100, men mellom 75 % til 95 % over tid. Dette er antakeligvis noe en kan lese mer om hos SSB.</p>
+<p>En begrensning med dette, er at det er navn til de som er født i Norge - ikke navn til alle som bor i Norge.</p>
+<pre class="r"><code>antall_navn = nrow(distinct(df, fornavn))
+antall_aar = nrow(distinct(df, år))
+
+temp = group_by(df, år) %&gt;%
+  summarise(sum_andel = sum(andel, na.rm = TRUE)) %&gt;%
+  qplot(data = ., x = år, y = sum_andel)</code></pre>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre class="r"><code>temp</code></pre>
+<p><img src="/post/2020-10-09-hvor-populære-blir-navnene_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Hva er det som ligger her? Vi ser nærmere på trednene til ti tilfeldig utvalgte navn.</p>
+<pre class="r"><code>utvalg_av_navn = slice_sample(df, fornavn, n = 10)
+temp = filter(df, fornavn %in% utvalg_av_navn$fornavn)
+
+ggplot(data = temp, aes(x = år, y = andel)) +
+  geom_line() +
+  facet_wrap(vars(fornavn))</code></pre>
+<pre><code>## Warning: Removed 5 row(s) containing missing values (geom_path).</code></pre>
+<p><img src="/post/2020-10-09-hvor-populære-blir-navnene_files/figure-html/unnamed-chunk-4-1.png" width="672" />
+Her er det nok litt tilfeldig hva som plukkes ut, så det hadde vært interessant å gjøre dette på en måte som sikra litt mer variasjon i trendene vi kunne se på.</p>
+</div>
+<div id="hvor-populære-er-aurora-og-vilde" class="section level1">
+<h1>Hvor populære er Aurora og Vilde?</h1>
+<pre class="r"><code>ggplot(data = filter(df, fornavn == &quot;Aurora&quot;|fornavn == &quot;Vilde&quot;)) +
+  geom_line(aes(x = år, y = andel, colour = fornavn))</code></pre>
+<p><img src="/post/2020-10-09-hvor-populære-blir-navnene_files/figure-html/unnamed-chunk-5-1.png" width="672" />
+# Prediksjon av trend</p>
+<p>En interessant pakke for å framskrive tidsserier er <a href="https://facebook.github.io/prophet/docs/quick_start.html#r-api">Prophet</a> - Facebooks tidsserie-algoritme.</p>
+<pre class="r"><code>#påkrevd dataformat
+df_prophet = filter(df, fornavn == &quot;Aurora&quot;) %&gt;%
+  select(ds = år, y = andel) %&gt;%
+  mutate(
+    ds = as.character(ds),
+    ds = as.Date(ds, format = &quot;%Y&quot;))
+
+#modell
+modell = prophet(df_prophet)</code></pre>
+<pre><code>## Disabling weekly seasonality. Run prophet with weekly.seasonality=TRUE to override this.</code></pre>
+<pre><code>## Disabling daily seasonality. Run prophet with daily.seasonality=TRUE to override this.</code></pre>
+<pre class="r"><code>framtida = make_future_dataframe(modell, periods = 80, freq = &quot;year&quot;)
+df_prediksjon = predict(modell, framtida)
+
+#graf
+plot(modell, df_prediksjon)</code></pre>
+<p><img src="/post/2020-10-09-hvor-populære-blir-navnene_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>#påkrevd dataformat
+df_prophet = filter(df, fornavn == &quot;Vilde&quot;) %&gt;%
+  select(ds = år, y = andel) %&gt;%
+  mutate(
+    ds = as.character(ds),
+    ds = as.Date(ds, format = &quot;%Y&quot;))
+
+#modell
+modell = prophet(df_prophet)</code></pre>
+<pre><code>## Disabling weekly seasonality. Run prophet with weekly.seasonality=TRUE to override this.</code></pre>
+<pre><code>## Disabling daily seasonality. Run prophet with daily.seasonality=TRUE to override this.</code></pre>
+<pre class="r"><code>framtida = make_future_dataframe(modell, periods = 80, freq = &quot;year&quot;)
+df_prediksjon = predict(modell, framtida)
+
+#graf
+plot(modell, df_prediksjon)</code></pre>
+<p><img src="/post/2020-10-09-hvor-populære-blir-navnene_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>Dette er en enkel tidsserie. Men det er jo ikke urimelig å forvente at navnetrender er nokenlunde like. Dvs. at en kan lære om trenden til et navn, ved å se på andre.</p>
+</div>

@@ -1,0 +1,23 @@
+---
+title: Hvordan lære datavisualisering?
+author: Eivind
+date: '2019-03-16'
+slug: hvordan-lære-datavisualisering
+categories:
+  - visualisering
+tags: []
+---
+
+Interessert i å lære grunnleggende data-visualisering, enten i R eller i et anna verktøy? Ser du etter bøker eller nettkurs? Min erfaring er at det følgende er viktige kriterier for om noe skal være bra:
+
+- Det må være kunnskapsbasert. Selv om det er __helt voldsomt mye gratis__ tilgjengelig et google-søk unna, betyr det også at det kan ta tid å luke ut det gode fra det vonde, skille snørr og kanel, og så videre. Når du skal velge et kurs, pass på at kurset har referanser til ny forskningslitteratur og en begrunna "beste praksis".
+- Det må være oppdatert. Etter hvert begynner en del tutorials å bli utdaterte. Særlig ggplot2 og tidyverse har utvikla seg med årene, og tidlige eksempler bruker gjerne bare base-funksjoner (uten at jeg skal starte [den diskusjonen](https://flowingdata.com/2016/03/22/comparing-ggplot2-and-r-base-graphics/)).
+- Det kan gjerne være redskaps-agnostisk.
+- Oppgavefokusert, ikke teknikk-fokusert- Det bør være fokusert på oppgavene du skal gjøre, og ikke teknikken. At du kan tegne linjediagram er flott, men i en praktisk setting sitter du med data som har visse egenskaper - og ønsker å se på disse egenskapene.
+
+### Oppdatering april 2019: Bruk tida di et annet sted enn på DataCamp. 
+Selskapet har problemer med seksuell trakasering, og rutinere for å håndtere det. R Weekly har noen lenker [her](https://rweekly.org/2019-15#datacamp) og [her](https://rweekly.org/2019-16.html#datacamp) om saken. Det viser seg at DataCamp her prøver å løse et problem med en svært problematisk blogg, mens de burde endra policy. [Julia Silge](https://juliasilge.com/blog/datacamp-misconduct/) og [RStudio](https://noamross.github.io/datacamp-sexual-assault/) er blant de som har reagert - for ikke å glemme instruktøren for kurset jeg lenker til over, Nick Strayer. 
+
+Strayer har har via [Twitter](https://twitter.com/NicholasStrayer/status/1117825231094206469?ref_src=twsrc%5Etfw) oppfordra folk til å gå et annet sted. Han anbefaler Claus Wilkes bok [Fundamentals of Data Vizualization](https://serialmentor.com/dataviz/), som er åpent tilgjengelig på internett (via bookdown). 
+
+Jeg har ikke sett på denne boka, men den ser ut til å oppfylle kravene mine for et godt visualiseringskurs:

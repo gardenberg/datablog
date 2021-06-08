@@ -1,0 +1,234 @@
+---
+title: 'Strømforbruket del 2: mer å spare ved å bytte leverandør, enn å kutte forbruket?'
+author: Eivind
+date: '2020-07-05'
+slug: strømforbruket-del-2-priser
+categories:
+  - R
+tags:
+  - strømforbruk
+---
+
+
+
+<p><strong>Hva handler denne artikkelen om?</strong> <em>Nylig flytta jeg inn i et større hus. Da vinteren slo inn, fikk jeg lett sjokk av ny strømregning. Er det mulig å analysere seg ut av dette?</em></p>
+<p>Enkelt, ja nesten banalt sagt, kan en kan få ned strømprisen på to måter: få en billigere strømpris, eller redusere strømforbruket. Nå ser jeg på kostnaden - <a href="https://suppe-og-analyse.netlify.app/post/kan-en-fikse-str%C3%B8mforbruket-analytisk/">forrige gang</a> så jeg på strømforbruket.</p>
+<p>Kort oppsummert: det ser ut til at å kutte utgiftene til strømleverandøren gir en større innsparing enn et kutt i forbruket på 10 %. Som så mange kjappe analyser gir det flere spørsmål: skyldes dette at leverandørene opererer med <a href="https://www.tv2.no/a/10394792/">lokketilbud</a>? Hvor stor strømsparing kan vi egentlig få til? Og hvorfor får jeg ikke strømprisene fra Nordpool til å matche med strømprisene i regninga mi?</p>
+<pre class="r"><code>library(tidyverse)
+library(here)
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+options(scipen = 100)
+
+#data
+
+#strømregninger
+df_bill &lt;- read_delim(here(&quot;content/data/power/bills.csv&quot;), &quot;;&quot;, escape_double = FALSE, 
+                 locale = locale(decimal_mark = &quot;,&quot;, grouping_mark = &quot;|&quot;, encoding = &quot;ISO-8859-1&quot;),
+                 col_types = cols(
+                   periode_start = col_date(format = &quot;%d.%m.%Y&quot;), 
+                   periode_stopp = col_date(format = &quot;%d.%m.%Y&quot;)
+                   ),
+                 trim_ws = TRUE)
+
+#strømpriser
+temp1 &lt;- read_delim(here(&quot;content/data/power/nordpool_elspotprices_2019_hourly.csv&quot;), &quot;;&quot;, escape_double = FALSE, locale = locale(decimal_mark = &quot;,&quot;,grouping_mark = &quot;|&quot;, encoding = &quot;ISO-8859-1&quot;), trim_ws = TRUE)
+temp2 &lt;- read_delim(here(&quot;content/data/power/nordpool_elspotprices_2020_hourly.csv&quot;), &quot;;&quot;, escape_double = FALSE, locale = locale(decimal_mark = &quot;,&quot;,grouping_mark = &quot;|&quot;, encoding = &quot;ISO-8859-1&quot;), trim_ws = TRUE)
+
+df_elpris = bind_rows(temp1, temp2) %&gt;%
+  separate(Hours, into = c(&quot;hour_start&quot;, NA), sep = 2) %&gt;%
+  mutate(periode_start = paste0(X1, &quot;-&quot;, hour_start, &quot;:00&quot;),
+         periode_start = as.POSIXct(periode_start, format = &quot;%d.%m.%Y-%H:%M&quot;),
+         ore_kwh = round(Oslo/10, digits = 2)
+         ) %&gt;%
+  select(periode_start, ore_kwh)
+
+#strømforbruk
+files= list.files(path = here(&quot;content/data/power/consumption&quot;), pattern = &quot;*.csv&quot;, full.names = TRUE) 
+df_consumption = map_df(files, read_delim, delim = &quot;;&quot;, escape_double = FALSE,
+  skip = 1,
+  col_names = c(&quot;fra&quot;, &quot;til&quot;, &quot;forbruk&quot;),
+  col_types = cols(
+    fra = col_datetime(format = &quot;%d.%m.%Y %H:%M&quot;), 
+    til = col_datetime(format = &quot;%d.%m.%Y %H:%M&quot;)
+    ), 
+  locale = locale(decimal_mark = &quot;,&quot;, grouping_mark = &quot;&quot;), 
+  trim_ws = TRUE)
+
+df_consumption = select(df_consumption, fra, forbruk) %&gt;%
+  distinct(., fra, .keep_all = TRUE)
+
+rm(files, temp1, temp2)</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-2-1.png" width="672" /><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-2-2.png" width="672" /></p>
+<p>Kostnaden var lav i juli 2019, på 500 kroner. I november var det nærmere 1800 kroner. Over disse ni månedene har jeg totalt betalt 10 323 kroner i strømregninger.</p>
+<div id="modellteoriforforståelse" class="section level2">
+<h2>Modell/teori/forforståelse:</h2>
+<p>Strømregninga bestemmes av nettleie + strømleverandør:</p>
+<p>Utgiften til strømleverandøren kan bestemmes på ulike måter (fastpris, spotpris). Jeg har spotpris, som Forbrukerrådet anbefaler som billigst på sikt. Strømleverandørens strømpris er spotprisen på strøm i markedet, pluss et påslag. Påslaget inneholder også kostnaden til elsertifikat. I tillegg tar strømleverandøren en fast sum. Dvs. at kostnaden for strøm = fast_strømleverandør + strømleverandør_strømpris * strømforbruk. Etter en kikk i regningene fant jeg også ut at jeg fra oktober 2019 til mars 2020 betalte for en unødvendig garantiordning.</p>
+<p><a href="https://www.nve.no/stromkunde/nettleie/">Nettleie</a> har en fast komponent og en variabel del som avhenger av forbruket, altså nettleie = fast_nettleie + nettleie_strømpris * strømforbruk. Den variable komponenten henger sammen med netteiers variable kostnader, særlig knytta til tap fra nettet.</p>
+<p>Totalt sitter vi da igjen med at kostnad = nettleie_fast + (nettleie_strømpris * strømforbruk) + strømleverandør_fast + (strømleverandør_strømpris * strømforbruk).</p>
+<p>Her er det to observasjoner som er viktige:
+- nettleia kan ikke justeres ved å bytte leverandør, hverken den faste eller variable kostnaden. Den variable delen påvirkes av strømforbruket.
+- den faste delen av strømkostnaden blir ikke påvirka av strømforbruket, men kun av bytte av leverandør.</p>
+<p>Samla sett gir dette et litt uoversiktelig bilde. Hvis jeg ønsker lavere strømkostnader, hvor mye får jeg igjen for å bytte strømleverandør som bl.a. <a href="https://www.forbrukerradet.no/pressemelding/to-av-tre-betaler-for-mye-for-strommen/">Forbrukerrådet anbefaler</a>? Og hvor mye får jeg igjen for å spare på strømmen?</p>
+</div>
+<div id="data" class="section level2">
+<h2>Data</h2>
+<p>For å svare på dette spørsmålet trenger jeg noen data på utgifter og strømbruk, satt opp på en slik måte at jeg kan teste ut ulike alternative mønstre.</p>
+<p>Strømprisene per time hentes fra <a href="https://www.nordpoolgroup.com/Market-data1/Dayahead/Area-Prices/ALL1/Hourly/?view=table">Nordpool</a>. Strømforbruket per time kan hentes fra <a href="https://elhub.no/">Elhub</a>. Strømregningene er fra min strømleverandør, og inkluderer også utgifter til nettleie.</p>
+<pre><code>## Warning: Column `month`/`periode` joining factor and character vector,
+## coercing into character vector</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre><code>## Warning: Column `month`/`periode` joining factor and character vector,
+## coercing into character vector</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-3-2.png" width="672" /></p>
+<p>I utgangspunktet hadde jeg tenkt å bruke data i den høyeste tidsoppløsningen jeg kunne finne. Imidlertid viste en liten sjekk at jeg ikke klarte å regne ut månedsprisen på strømregninga ved hjelp av strømprisene og strømforbruket på timesnivå. Beregningene må dermed ta utgangspunkt i strømregninga, og det månedlige forbruket.</p>
+</div>
+<div id="nettleie-er-størst-i-7-av-9-måneder" class="section level2">
+<h2>Nettleie er størst i 7 av 9 måneder</h2>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>I alle månedene unntatt november og desember er nettleia den største komponenten. Strømleverandøren tar fra 35 % til 55 %, og 150 til 1000 kr.</p>
+<p>På månedsbasis ser utgiftene slik ut:</p>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<div id="strømprisen-per-time" class="section level3">
+<h3>Strømprisen per time</h3>
+<pre class="r"><code>temp = mutate(df_elpris, 
+  time = lubridate::hour(periode_start),
+  dag = lubridate::wday(periode_start, label = TRUE, abbr = FALSE),
+  ukedag = ifelse(dag %in% c(&quot;lørdag&quot;, &quot;søndag&quot;), &quot;helg&quot;, &quot;arbeidsdag&quot;))
+
+ggplot(data = temp, aes(x = periode_start, y = ore_kwh)) + 
+  geom_line() + 
+  labs(title = &quot;Prisen per kwH har falt gjennom perioden&quot;, x = &quot;Dato&quot;, y = &quot;Øre pr. kwH&quot;)</code></pre>
+<pre><code>## Warning: Removed 2 rows containing missing values (geom_path).</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(data = temp, aes(x = time, y = ore_kwh)) + 
+  geom_smooth() + 
+  labs(title = &quot;Strømmen koster mest rundt kl. 9 og kl. 18&quot;, subtitle = &quot;Øre pr. kwH gjennom døgnet&quot;, x = &quot;Time&quot;, y = &quot;Øre pr. kwH&quot;)</code></pre>
+<pre><code>## `geom_smooth()` using method = &#39;gam&#39; and formula &#39;y ~ s(x, bs = &quot;cs&quot;)&#39;</code></pre>
+<pre><code>## Warning: Removed 2 rows containing non-finite values (stat_smooth).</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
+</div>
+</div>
+<div id="hvordan-er-fordelinga-mellom-faste-og-variable-komponenter" class="section level2">
+<h2>Hvordan er fordelinga mellom faste og variable komponenter?</h2>
+<pre class="r"><code>temp = group_by(df_bill, periode_start, produkt) %&gt;%
+  summarise(kostnad = sum(sum)) %&gt;%
+  mutate(`månedskostnad` = sum(kostnad),
+         kostnad_andel = kostnad/`månedskostnad`,
+         `måned` = lubridate::month(periode_start, label = TRUE)
+         )
+
+ggplot(aes(x = fct_reorder(måned, periode_start), y = kostnad, colour = produkt, group = produkt), data = temp) + 
+  geom_line() + 
+  labs(x = &quot;Måned&quot;, y = &quot;Kostnad&quot;)</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(aes(x = fct_reorder(måned, periode_start), y = kostnad_andel, colour = produkt, group = produkt), data = temp) + 
+  geom_line() + 
+  labs(x = &quot;Måned&quot;, y = &quot;Andel av total kostnad&quot;)</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-7-2.png" width="672" /></p>
+<p>Den faste delen av nettleia (“fastledd”) gikk opp fra 160 til 180 i fjor høst. Andelen av totalbeløpet faller rimelig nok med økte totalkostnader. Fastbeløpet til energiselskapet er mindre, og har ligget rundt 25 kroner i hele perioden. Men jeg hadde også en “trippelgaranti” på regninga mi, som var en unødvendig forsikringsordning. Det var også i praksis en fastkostnad, som fra oktober til mars kosta meg 50 kroner i måneden.</p>
+<p>Enerigleddet i nettleia er en god del høyere, og utgjør fra 30 % til over 50 % av hele regninga. Innkjøpsprisen til strømselskapet utgjorde den største delen til og med desember i fjor, men etter det har den falt under energileddet. Som vi ser av figuren har strømprisen falt en del, og utgjør en stadig lavere andel av totalregninga.</p>
+<pre class="r"><code>temp = filter(df_bill, produkt == &quot;innkjøpspris&quot;) %&gt;%
+  mutate(kwh_pris_øre = (sum / forbruk_kwh)*100) %&gt;%
+  arrange(periode_start)
+  
+ggplot(aes(x = fct_reorder(periode, periode_start), y = kwh_pris_øre, group = 1), data = temp) + 
+  geom_line() + 
+  labs(x = &quot;måned&quot;, y = &quot;kostnad&quot;, title = &quot;Strømpris øre pr. kwh&quot;)</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+</div>
+<div id="litt-simulering" class="section level2">
+<h2>Litt simulering</h2>
+<p>Så hvor stor del av kostnaden blir påvirket av strømforbruket, og hvor stor del blir påvirka av hvilket strømselskap en velger?</p>
+<p>I utgangspunktet kunne en jo sett for seg å svare på dette spørsmålet med en regresjonsanalyse eller liknende, f.eks. noe slikt der en modellerer den månedlige kostnaden som en funksjon av strømforbruket:</p>
+<pre class="r"><code>temp = select(df_bill, periode_start, forbruk_kwh) %&gt;%
+  filter(is.na(forbruk_kwh) == FALSE) %&gt;%
+  distinct(., .keep_all = TRUE)
+
+temp_total = group_by(df_bill, periode_start) %&gt;%
+  summarise(., totalkostnad = sum(sum))
+
+temp = left_join(temp, temp_total)</code></pre>
+<pre><code>## Joining, by = &quot;periode_start&quot;</code></pre>
+<pre class="r"><code>modell_1 = lm(data = temp, totalkostnad ~ forbruk_kwh)
+
+summary(modell_1)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = totalkostnad ~ forbruk_kwh, data = temp)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -307.14  -65.09   31.69  122.36  263.89 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) 208.0601   175.4550   1.186 0.274376    
+## forbruk_kwh   0.9307     0.1613   5.769 0.000685 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 196.6 on 7 degrees of freedom
+## Multiple R-squared:  0.8262, Adjusted R-squared:  0.8014 
+## F-statistic: 33.28 on 1 and 7 DF,  p-value: 0.0006849</code></pre>
+<pre class="r"><code>temp = broom::augment(modell_1)
+ggplot(data = temp) + 
+  geom_line(aes(x = forbruk_kwh, y = totalkostnad)) +
+  geom_point(aes(x = forbruk_kwh, y = totalkostnad)) + 
+  geom_line(aes(x = forbruk_kwh, y = .fitted), colour = &quot;grey&quot;)</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Dette er ikke den verste sammenhengen jeg har sett, med ca. 80 % forklart variasjon med forbruksleddet, og en sammenheng som tilsier at for hver brukte kilowatt-time, går kostnaden opp med 93 øre.</p>
+<p>Men det er også en regresjon med temmelig få observasjoner, og den gir meg ikke mulighet til å skille mellom ulike typer av faste kostnader: nettleie (som jeg ikke får endra), og utgifter til leverandøren (som jeg kan endre).</p>
+<p>For å svare på det spørsmålet jeg er interessert i å besvare, trenger jeg derfor heller:</p>
+<ul>
+<li>et datasett der jeg kan variere strømforbruket, og se konsekvensen av det.</li>
+<li>Jeg må også se kostnadene ved valg av leverandør som kan påvirkes av å bytte til en anna strømleverandør. Dette er påslaget pr. kwH, og faste utgifter.</li>
+</ul>
+<p>Med litt plundring får jeg til det.</p>
+<p>Hvor mye er det rimelig å tenke at en kan redusere strømforbruket sitt? Vanskelig å si - vi begynner med å gjette på 10 %.</p>
+<p>Ut ifra <a href="https://www.strompris.no/">Strømpris.no</a> ser det ut til 7 strømselskaper faktisk betaler meg for å velge dem, og garanterer den prisen i et halvt år. Her inngår det da 0 kroner i fastbeløp til leverandøren, og et negativt påslag. For et første forsøk nuller vi denne utgiftsposten.</p>
+<pre><code>## Joining, by = &quot;periode_start&quot;
+## Joining, by = &quot;periode_start&quot;</code></pre>
+<p><img src="/post/2020-04-09-strømforbruket-del-2-priser_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p>Som vi ser av figuren over, er innsparingseffekten av å bytte strømleverandør til noen som ikke tar betalt utover strømprisen, mer lønnsomt enn å redusere strømforbruket med 10 %.</p>
+<pre class="r"><code>innsparing = group_by(temp, scenario) %&gt;%
+  summarise(kostnad = sum(kostnad)) %&gt;%
+  arrange(kostnad)
+
+knitr::kable(innsparing)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">scenario</th>
+<th align="right">kostnad</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">scenario_3_kostnad</td>
+<td align="right">9345.638</td>
+</tr>
+<tr class="even">
+<td align="left">scenario_2_kostnad</td>
+<td align="right">9501.317</td>
+</tr>
+<tr class="odd">
+<td align="left">faktisk_totalkostnad</td>
+<td align="right">10323.090</td>
+</tr>
+</tbody>
+</table>
+<p>Innsparinga tilsvarer 1000 kroner over denne perioden vi ser på her, 9 måneder.</p>
+</div>
+<div id="konklusjon" class="section level1">
+<h1>Konklusjon</h1>
+<p>Ut ifra beregningene over, har vi sett at strømforbruket varierer en del, men også kostnadene. Kostnadene henger tett sammen med strømforbruket, men ettersom markedet for leverandører i dag er slik at strømselskaper betaler deg for å velge dem - så er det (med vårt forbruk over de siste ni månedene) mer å spare på å bytte strømleverandør enn å kutte forbruket med 10 %.</p>
+<p>Spørsmål jeg sitter igjen med:</p>
+<ul>
+<li><p>Hvor mye kan jeg realistisk sett spare inn på strømforbruket? Tips fra f.eks. denne <a href="https://www.enok.no/vis_nyhet53a2.html?id=0&amp;nid=829">ENØK-sida</a> sier at strømsparing er det mest lønnsomme. Stemmer det fortsatt? Den forrige gjennomgangen av strømforbruket ga et bilde av svingninger og variasjon. Men det er noe anna å gå derifra til å si noe om hvor mye av forbruket som kan kuttes eller reduseres. Hvor mye sparer vi f.eks. på å redusere alle varmeovner til 20 grader, dusje kortere, vaske større vaskemaskiner av gangen - og evt. smarthus-tiltak?</p></li>
+<li><p>Hvorfor avviker strømprisen fra Nordpool så mye fra det jeg betaler i innkjøpspris til strømleverandøren? Har jeg ikke timespot, men en forbruksprofil-spot? Er det i så fall noe å tjene her?</p></li>
+</ul>
+</div>

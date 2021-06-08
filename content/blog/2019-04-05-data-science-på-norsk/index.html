@@ -1,0 +1,65 @@
+---
+title: Data science på norsk?
+author: Eivind
+date: '2019-04-05'
+slug: data-science-på-norsk
+categories:
+  - datascience
+tags:
+  - datascience
+---
+
+
+
+<p>“Data science” eller datavitenskap er den nye vinen. Eller, det skulle man i hvert fall tro når til og med staten arrangerer <a href="https://www.difi.no/arrangement/2019-04-05/fagforum-kunstig-intelligensdata-science-i-offentlig-sektor">fagforum</a> for “kunstig intelligens og data science”. Men hva er det? Hva er det på norsk? Og er det viktig?</p>
+<div id="hva-er-datavitenskap" class="section level1">
+<h1>Hva er datavitenskap?</h1>
+<p>For det aller første, så er det åpenbart et engelsk begrep som klinger dårlig i norske ører. Jeg har imidlertid ikke funnet noen god norsk oversettelse så langt. Avanserte analyser høres et hakk bedre ut, men mulig det ikke gir helt de riktige konnotasjonene enda.</p>
+<p>Framveksten av datavitenskap (i Norge) henger tett sammen med framveksten av kunstig intelligens.</p>
+<pre class="r"><code>#sett inn figuren fra disse dataene
+#https://trends.google.com/trends/explore?date=all&amp;geo=NO&amp;q=data%20science,Kunstig%20intelligens
+df = read.csv(here(&quot;content&quot;,&quot;data&quot;,&quot;google_searches_ds_ai.csv&quot;), skip = 2, stringsAsFactors = FALSE, fileEncoding = &quot;UTF-8&quot;)
+
+names(df) = c(&quot;dato&quot;, &quot;datascience&quot;, &quot;kunstig intelligens&quot;)
+df = gather(df, searchterm, verdi, datascience:`kunstig intelligens`)
+df$dato = as.Date(paste0(df$dato,&quot;-&quot;,&quot;01&quot;), &quot;%Y-%m-%d&quot;) #aner ikke hvorfor jeg må legge til en dag, men det fungerer
+
+qplot(data = df, x = dato, y = verdi, colour = searchterm, group = searchterm, geom = &quot;line&quot;)+
+  labs(colour = &quot;søkeord&quot;, title =&quot;Google-søk etter datavitenskap og AI følger hverandre tett&quot;)</code></pre>
+<p><img src="/post/2019-04-05-data-science-på-norsk_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>En måte å framstille dette på ble laget allerede i 2010 av <a href="http://drewconway.com/zia/2013/3/26/the-data-science-venn-diagram">Drew Conway</a>, i det etterhvert MYE delte data science vendiagrammet:</p>
+<div class="figure">
+<img src="/post/2019-04-05-data-science-på-norsk_files/Data_Science_VD.png" alt="datascience venn diagram" />
+<p class="caption">datascience venn diagram</p>
+</div>
+<p>Det er altså tre områder som må kombineres i datavitenskap: teknisk kunnskap, statistikk og domeneekspertise. Conway selv har seinere sagt at han ikke tror på enhjørningen - den perfekte utøveren som er ekspert på alle tre. Snarere handler det om å sette sammen et team som er gode på alle områdene. Men den enkelte bør forstå viktigheten av de andre områdene. I hodet mitt er følgende inndeling nyttig:</p>
+<ol style="list-style-type: decimal">
+<li>analyser med avanserte metoder. Men også standard-analyser kan bruke avanserte metoder.</li>
+<li>utvikling av digitale tjenester som bruker kvantitative metoder for å klassifisere eller predikere, og som kjører i “produksjon”.</li>
+</ol>
+<div id="littebitt-hype" class="section level2">
+<h2>Littebitt hype…?</h2>
+<p>Gartner har utvikla en “hype cycle”, som (<a href="https://www.gartner.com/en/research/methodologies/gartner-hype-cycle">i følge dem selv</a>) skal fortelle noe om fasene en teknologi o.l. går igjennom: innovasjon, for høye forventninger, desillusjon, opplysning og produktivt platå. For data science ser det slik ut:</p>
+<div class="figure">
+<img src="/post/2019-04-05-data-science-på-norsk_files/gartner_hype_cycle.png" alt="Gartner hype cycle - from trigger through peak expectations, trough of disillusionment, onto the plateau of realism" />
+<p class="caption">Gartner hype cycle - from trigger through peak expectations, trough of disillusionment, onto the plateau of realism</p>
+</div>
+<p>Hvor er vi nå? Antakeligvis på hype-stedet fortsatt, i hvert fall i amerikansk forstand. Men hva med Norge? I 2017 starta UMB på Ås som første norske universitet en master i datavitenskap. Ser du på et <a href="https://www.google.com/search?q=%22data+science%22&amp;client=firefox-b-d&amp;tbm=nws&amp;source=lnt&amp;tbs=lr:lang_1no&amp;lr=lang_no&amp;sa=X&amp;ved=0ahUKEwjq1_r4ocvhAhVusYsKHQNkDRcQpwUIIA&amp;biw=1536&amp;bih=728&amp;dpr=1.25">google-søk</a> også her, ser det ut til å være godt diskutert i diverse medier og bransjeblader de siste årene.</p>
+</div>
+</div>
+<div id="trender-i-utlysninger" class="section level1">
+<h1>Trender i utlysninger?</h1>
+<p>Men ta helst ikke mitt ord for det - se på noen data. NAV har publisert historiske stillingsutlysninger, med både vasket stillingstittel, og de 4000 første tegnene av stillingsbeskrivelsen. Strengt tatt er disse også tilgjengelig gjennom et API, men det har jeg sålangt ikke helt funnet ut av (dokumentasjonen sender meg <a href="https://docs.ckan.org/en/latest/maintaining/datastore.html#the-datastore-api">hit</a>.</p>
+<pre class="r"><code># henter data fra https://data.nav.no/dataset/utlysningstekster-ledige-stillinger-historikk/resource/882e3e0f-cd3c-4d3a-8072-be7ba7b3d272
+
+df = read.csv2(&quot;https://data.nav.no/dataset/408fc52c-b50e-4ee7-a620-305eaa5d56e7/resource/882e3e0f-cd3c-4d3a-8072-be7ba7b3d272/download/stillingstekster-2018.csv&quot;, stringsAsFactors = FALSE, header = TRUE, fileEncoding = &quot;UTF-8&quot;)
+
+temp = filter(df, grepl(&quot;data science&quot;, Stillingsbeskrivelse.vasket))
+str(temp)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    142 obs. of  4 variables:
+##  $ Stillingsnummer.nav.no     : chr  &quot;0313-2018-06-206&quot; &quot;0219-2018-07-316&quot; &quot;0335-2018-06-320&quot; &quot;1161-2018-08-267&quot; ...
+##  $ Stilling.Id                : chr  &quot;9817940&quot; &quot;9846955&quot; &quot;9830050&quot; &quot;9869547&quot; ...
+##  $ Tittel.vasket              : chr  &quot;Har du lyst til å være med og bygge det råeste ana&quot; &quot;Systemutvikler i Digitalisering og IT (DigIT)&quot; &quot;Senior data scientist position to help empower per&quot; &quot;Analytiker - Analyseavdelingen&quot; ...
+##  $ Stillingsbeskrivelse.vasket: chr  &quot;&lt;div&gt;&lt;p&gt;&lt;p&gt;I Atea brenner vi for livslang læring. Gode verdier er viktig for å stadig utvikle oss selv, teamet &quot;| __truncated__ &quot;&lt;b&gt;Vil du være med å digitalisere #?&lt;/b&gt;\n&lt;br/&gt;\n# er på vei gjennom et stort digitaliseringsløp hvor vi blant &quot;| __truncated__ &quot;&lt;div&gt;&lt;p&gt;&lt;p&gt;OncoImmunity is a machine-learning based company providing software to empower personalized cancer i&quot;| __truncated__ &quot;Presentasjon av stillingen:&lt;br/&gt;\nØnsker du å delta i arbeidet med å gjøre spesialisthelsetilbudet bedre for pa&quot;| __truncated__ ...</code></pre>
+<p>142 stillinger av 212 011? Ikke veldig hype - men heller ikke veldig grundig søkt i teksten.</p>
+</div>

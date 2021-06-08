@@ -1,0 +1,142 @@
+---
+title: Eurovision og Kendall's Tau
+author: Eivind
+date: '2021-05-21'
+slug: []
+categories: []
+tags: []
+---
+
+__Hva handler dette om?__ _Det er på tide med Eurovision! Glam, glitter og pappmusikk - og en anledning til å ha en liten konkurranse, og lære litt om statistikk for rankinger_
+
+Eurovision 2021 - eller Melodi Grand Prix, som vi kaller det i Norge, går snart av stabelen. Og det bør jo bli fantastisk, etter flere år uten musikken. 
+
+Riktignok er musikken enestående forglemmelig, men det er allikevel gøy. Derfor hadde vi en liten konkurranse på jobb om å tippe på vinnere i konkurransen.
+
+```{r, include = FALSE}
+#biblioteker
+library(tidyverse)
+library(readxl)
+library(here)
+```
+
+Resultatene hentes fra [Eurovisionworld.com](https://eurovisionworld.com/eurovision/2021). Deltakelsen i tippekonkurransen ble henta inn i Easyfact, og er anonymisert.
+
+```{r, include = FALSE}
+#data
+df <- read_excel(here("content/data/pivotert_deltakere_analyse.xlsx"))
+resultater <- read_excel(here("content/data/mgp_resultater_2021.xlsx"))
+
+```
+
+For den som ikke har sluttplasseringene i hodet, så ble resultatlista slik:
+
+```{r, echo = FALSE}
+resultat_df = filter(resultater, deltaker == "totalt", variabel == "plass") %>%
+  rename(plass = Verdi) %>%
+  arrange(plass)
+
+knitr::kable(select(resultat_df, land, plass))
+
+```
+
+Det er to spørsmål som er interessante å se på her: 
+
+1. hvis vi hadde vært et land, hvordan hadde lista blitt da, sammenliknet med resultatene totalt sett?
+2. hvem var best til å tippe?
+
+# Hvis vi var et land, hvordan hadde resultatet blitt da?
+
+Det første spørsmålet er veldig lett å svare ut - det er bare å summere poengene og sette på en plassering
+
+```{r}
+analyse_df = group_by(df, land) %>%
+  summarise(
+    poeng = sum(poengverdi)
+  ) %>%
+  mutate(
+    plass = rank(desc(poeng), ties.method = "min")
+  ) %>%
+  left_join(
+    ., select(resultat_df, land, faktisk_plass = plass), by = "land"
+  ) %>%
+  arrange(plass)
+
+knitr::kable(select(analyse_df, land, plass, faktisk_plass))
+
+
+```
+
+Hvis Analyseavdelinga hadde fått bestemme, hadde Maltas !Je me casse! vunnet, foran pussig teknobit-dans fra Island, og svarthvitt crooning fra Portugal. Ikke narkotikafrie rockere fra Italia, Voila-Frankrike og tårevåte Sveits.
+
+# Men hvem var nærmest det faktiske resultatet?
+
+Dette er i grunnen et interessant spørsmål. Først lager vi et utpivotert datasett, hvor de ulike deltakerne er med, sammen med totalpoengene:
+
+```{r}
+temp = group_by(df, deltaker) %>%
+  mutate(
+    plass = rank(desc(poengverdi), ties.method = "min")
+  ) %>%
+  select(
+    deltaker, land, plass
+  )
+
+temp = bind_rows(select(resultat_df, -variabel), temp)
+temp = pivot_wider(temp, names_from = deltaker, values_from = plass)
+
+knitr::kable(temp)
+
+```
+
+[Kendall's Tau](https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient), eller rang-korrelasjons-koeffisient, er den en bruker for å korrelere ranker. Den kan måle styrken på forbindelsen mellom to ordinale variabler, i en bivariat krysstabell - som du vil få hvis du f.eks. har to personer som har rangert Eurovision-bidrag på en skala fra 1 til 12. 
+
+For å gjøre det mer forvirrende, og fordi økonomer liker å sette navnet sitt på ting, finnes det tre ulike implementeringer av Tau:
+
+1. Kendall's Tau-a. Standardmålet og det opprinnelige forslaget.
+2. Kendall's Tau-b. Denne justerer seg for uavgjorte verdier (hvis en har gitt samme rangering til en verdi).
+3. Stuart's Tau-c. Denne justerer for uavgjorte verdier, og håndterer tabeller som har ulik størrelse (f.eks. om en totalt har rangert 26 bidrag fra 1 til 26, mens en deltaker har rangert fra 1 til 11). 
+
+I base-R er det Kendalls tau b som er implementert, antakeligvis fordi den håndterer "ties" - noe som hyppig kommer opp.
+
+Vi regner like greit ut for alle, med hjelp av DescTools-pakka, som har implementert alle tre:
+
+```{r}
+
+kor_matrise = data.frame(
+  deltakere = c("Glam International", "Magiske Soppen", "Analytix", "Brandenburger Tor", "Eivindmaskin", "RS"),
+  tau_a = c(
+    DescTools::KendallTauA(temp$`Glam International`, temp$totalt),
+    DescTools::KendallTauA(temp$`Magiske Soppen`, temp$totalt),
+    DescTools::KendallTauA(temp$Analytix, temp$totalt),
+    DescTools::KendallTauA(temp$`Brandenburger Tor`, temp$totalt),
+    DescTools::KendallTauA(temp$Eivindmaskin, temp$totalt),
+    DescTools::KendallTauA(temp$RS, temp$totalt)
+),
+tau_b = c(
+    DescTools::KendallTauB(temp$`Glam International`, temp$totalt),
+    DescTools::KendallTauB(temp$`Magiske Soppen`, temp$totalt),
+    DescTools::KendallTauB(temp$Analytix, temp$totalt),
+    DescTools::KendallTauB(temp$`Brandenburger Tor`, temp$totalt),
+    DescTools::KendallTauB(temp$Eivindmaskin, temp$totalt),
+    DescTools::KendallTauB(temp$RS, temp$totalt)
+),
+  tau_c = c(
+    DescTools::StuartTauC(temp$`Glam International`, temp$totalt),
+    DescTools::StuartTauC(temp$`Magiske Soppen`, temp$totalt),
+    DescTools::StuartTauC(temp$Analytix, temp$totalt),
+    DescTools::StuartTauC(temp$`Brandenburger Tor`, temp$totalt),
+    DescTools::StuartTauC(temp$Eivindmaskin, temp$totalt),
+    DescTools::StuartTauC(temp$RS, temp$totalt)
+)) %>%
+  mutate(
+    plass = rank(desc(tau_c))
+  ) %>%
+  arrange(plass)
+
+knitr::kable(kor_matrise, digits = 2)
+
+```
+
+Den endelige resultatlista rangerer alle 26 deltakerne, mens hver enkelt deltaker kun har rangert 10 land. Dermed er det Tau-c som er det korrekte målet å bruke. Vi ser at det har særlig betydning for Analytix, som kun ga poeng til Ukraina - og ingenting annet. De fleste får en høyere sammenhengsverdi med tau-b enn tau-c, antakeligvis pga. hvordan sisteplass er håndtert i poenggivninga. 
+

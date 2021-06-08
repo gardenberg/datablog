@@ -1,0 +1,183 @@
+---
+title: Forløpsanalyse på treningsdata
+author: Eivind
+date: '2019-10-29'
+slug: forløpsanalyse-på-treningsdata
+categories:
+  - R
+  - trening
+tags: []
+---
+
+
+
+<p><strong>Hva handler denne artikkelen om?</strong> <em>Et forsøk på å skvise noe mer innsikt ut av treningsdataene med forløpsanalyse</em></p>
+<p>Sist så jeg nærmere på treningsdataene mine, og fant litt ulike måter å visualisere dem på. Men kan de også kjøres gjennom en forløpsanalyse?</p>
+<p>Her finnes det to tilnærminger, og to interessante forløp å studere.
+- Den ene er tida mellom enkelttreninger, dvs. egentlig hvor lange pausene er, og hva som bidrar til kortere vs. lengre pausetider.
+- Den andre er tida i en lengre treningsperiode, bestående av flere treningsøkter, før den brytes opp.</p>
+<p>Hva konklusjonen blir? Dette fungerer sånn passe godt som eksempel på en ide som ikke viser å gi stort, men ikke så mye mer.</p>
+<p>For å få dette over på et forløpsformat, lager jeg en data.frame med alle datoer i rekka, før jeg joiner inn treningsdataene:</p>
+<pre class="r"><code>df_alle = data.frame(dato = seq(from = as.Date(ymd_hms(min(df$start_time))), to = as.Date(ymd_hms(max(df$start_time))), by = 1)) %&gt;%
+  left_join(., df) %&gt;%
+  arrange(dato) %&gt;%
+  mutate(er_trening = ifelse(is.na(start_time), FALSE, TRUE)
+         ) </code></pre>
+<pre><code>## Joining, by = &quot;dato&quot;</code></pre>
+<pre class="r"><code>#her må jeg også håndtere datoer som har to treningsøkter registrert.</code></pre>
+<p>#Dagers pause
+Så kan jeg kartlegge hvor mange dagers pause jeg har mellom treningsøkter. I samme slengen legger jeg på en identifikator, som identifiserer hver treningsøkt + dagene med restitusjon som tilhørene til en “økt”.</p>
+<pre class="r"><code>i = 1
+j = 0
+`økt` = 0 
+for(i in 1:length(df_alle$dato)){
+  if(df_alle$er_trening[[i]] == TRUE){
+    j = 0
+    `økt` = `økt` + 1
+    df_alle$dager_siden_trening[[i]] = j
+    df_alle$`økt_id`[[i]] = `økt`
+  }
+  if(df_alle$er_trening[[i]] == FALSE){
+    j = j+1
+    df_alle$dager_siden_trening[[i]] = j
+    df_alle$`økt_id`[[i]] = `økt`
+  }
+}
+
+temp1 = group_by(df_alle, `økt_id`) %&gt;%
+  summarise(dager_restitusjon = max(dager_siden_trening))
+
+temp2 = ungroup(temp1) %&gt;%
+  group_by(dager_restitusjon) %&gt;%
+  summarise(antall = n())
+
+ggplot(data = temp2) + 
+  geom_col(aes(x = dager_restitusjon, y = antall))</code></pre>
+<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Langt de fleste resitusjonsperiodene er på 1-4 dager - nærmere 250 av de 292 treningsaktivitetene ble etterfulgt av ei slik pause. Men så dras snittet opp av de lengre periodene på ei uke, to uker og mer.</p>
+<p>Min teori er at det ikke er stort å hente her ved å se på dette som et forløp: alle pausene er avslutta med en ny treningsøkt, og sensurering av observasjoner er ikke et problem.</p>
+<p>Det er to grunnleggende biter informasjon jeg trenger for å se på dette i et forløps-oppsett: Tid til hendelse, og en indikator på hvilken hendelse som inntraff. Hendelsen er en ny treningsøkt. Tida er lengden på pausen mellom treningsøkter, i dager.</p>
+<pre class="r"><code>df_survival = ungroup(df_alle) %&gt;%
+  select(dato, dager_siden_trening, økt_id, er_trening) %&gt;%
+  group_by(økt_id) %&gt;%
+  filter(dager_siden_trening == max(dager_siden_trening)) %&gt;%
+  mutate(
+    pauselengde = dager_siden_trening,
+    hendelse = !er_trening
+    )
+
+#en kikk på Surv-objektet
+trening_survival = survfit(Surv(pauselengde, hendelse == TRUE)~1, data = df_survival)
+trening_survival</code></pre>
+<pre><code>## Call: survfit(formula = Surv(pauselengde, hendelse == TRUE) ~ 1, data = df_survival)
+## 
+##       n  events  median 0.95LCL 0.95UCL 
+##     292     286       2       2       2</code></pre>
+<pre class="r"><code>temp = broom::tidy(trening_survival) %&gt;%
+  filter(time &lt; 50)
+
+ggplot(data = temp, aes(x = time, y = estimate))+
+  geom_line() +
+  geom_ribbon(aes(ymin=conf.low,ymax=conf.high),alpha=0.2) +
+  labs(x = &quot;Dagers pause&quot;, y = &quot;Sannsynlighet for å fortsette treningspausa&quot;, title = &quot;Sannsynlighet for å fortsette treningspause, etter antall dager&quot;, subtitle = &quot;Kaplan-Meier-kurve&quot;)</code></pre>
+<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>Her ser vi det samme mønsteret som i grafen over: langt de fleste pausene er korte, og sannsynligheten for å fortsette ei pause faller ganske bratt de første fire dagene. Deretter flater den ut, og faller langt langsommere etter det.</p>
+<p>Jeg har ingen egentlig informasjon om pausen, utover lengden på den, og en dato som forteller noe om hvilken del av året pausen var i.</p>
+<p>#Treningsperioder
+Mens vi over så på hver enkelt pause, og sannsynligheten for å avbryte pausa og gå tilbake i trening, er det kanskje mer interessant å se på lengre bolker av trening: Det er ikke noe mål i seg selv å ha kortest mulig pauser mellom treningsøktene, også pausene er viktige.</p>
+<p>Derfor grupperer jeg disse i bolker av trening, der en tilstrekkelig lang pause gir “frafall” fra treninga. Hvor mange dagers pause gir fall i kondisjonen, slik at en ny oppstart kan sies å starte på et betraktelig lavere nivå enn der man slapp opp? Det spørs på intensiteten på treninga, men det ser (ifølge <a href="https://forskning.no/spor-en-forsker-trening/spor-en-forsker-hvor-raskt-blir-kondisjonen-darligere/728492">denne artikkelen</a>) ut til å være slik at:</p>
+<ul>
+<li>kondisjonen raskt blir dårligere,</li>
+<li>den faller raskere enn den øker i treningsperioden,</li>
+<li>eksperimenter har vist at alt fra 12 dager til 21 og 28 dager med ingen aktivitet gir betraktelig fall i kondisjon,</li>
+<li>effekten av nedtrening ser imidlertid ut til å stabiliere seg etter ei viss tid, ned på et grunnivå,</li>
+<li>forskerne antar at også 3-4 dagers pause kan gi fall i kondisjon, men her er det store variasjoner - både psykisk og genetisk. Et tips er å prøve å finne fram til den riktige balansen mellom for kort restitusjon, og for mange - da har en mulighet til å øke evnen sin.</li>
+</ul>
+<p>Hvor mange ulike perioder snakker vi potensielt her om, hvis vi setter cutoffen et sted mellom 4 dager og 28 dager?</p>
+<pre class="r"><code>#settings for loopen i pauselengder
+temp = data.frame(pauselengde = 4:28, antall_perioder = NA)
+
+for(a in min(temp$pauselengde):max(temp$pauselengde)){
+#settings for treningsloopen
+i = 1
+df_alle$periode[[1]] = 1
+periode = 1 
+
+for(i in 2:length(df_alle$dato)){
+  if(df_alle$er_trening[[i]] == TRUE){
+    if(df_alle$dager_siden_trening[[i-1]] &lt;= a-1){
+      df_alle$periode[[i]] = periode
+    }
+    if(df_alle$dager_siden_trening[[i-1]] &gt; a-1){
+      periode = periode + 1
+      df_alle$periode[[i]] = periode
+    }
+  }
+  if(df_alle$er_trening[[i]] == FALSE){
+    df_alle$periode[[i]] = periode
+  }
+}
+  temp[a - (min(temp$pauselengde)-1),2] = max(df_alle$periode)
+}
+
+
+ggplot(data = temp) + 
+  geom_line(aes(x = pauselengde, y = antall_perioder)) + 
+  labs(title = &quot;Antall treningsperioder&quot;, x = &quot;Dagers pause for ny periode&quot;, y = &quot;Antall perioder&quot;)</code></pre>
+<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Hvis vi setter cut-off ved 4 dager, er jeg oppe i nærmere 70 distinkte treningsperioder. Antallet perioder avtar ganske bratt til rundt ca. 8 dagers pause, hvorfra det flater ut. Med 12 dagers pause er antallet treningsperioder 15, og 28 er det 6 perioder.</p>
+<p>Vi går for 12 dager, den korteste pausa forskninga over henviser til som betraktelig dårlig:</p>
+<pre class="r"><code>#settings for treningsloopen
+i = 1
+df_alle$periode[[1]] = 1
+periode = 1 
+
+for(i in 2:length(df_alle$dato)){
+  if(df_alle$er_trening[[i]] == TRUE){
+    if(df_alle$dager_siden_trening[[i-1]] &lt;= 11){
+      df_alle$periode[[i]] = periode
+    }
+    if(df_alle$dager_siden_trening[[i-1]] &gt; 11){
+      periode = periode + 1
+      df_alle$periode[[i]] = periode
+    }
+  }
+  if(df_alle$er_trening[[i]] == FALSE){
+    df_alle$periode[[i]] = periode
+  }
+}
+
+df_alle = group_by(df_alle, periode)%&gt;%
+  mutate(dag_periode = seq_along(dato))
+
+#lager en dataframe med den nødvendige informasjonen
+df_survival = ungroup(df_alle) %&gt;%
+  select(dato, periode, dag_periode, er_trening) %&gt;%
+  group_by(periode) %&gt;%
+  filter(dag_periode == max(dag_periode)) %&gt;%
+  mutate(
+    hendelse = !er_trening
+    )</code></pre>
+<p>Mens vi i analysen over så på tiden fra en treningsøkt og fram til neste pause, og sannsynligheten for å avslutte en restitusjonsperiode, ser vi her på lengden på en treningsperiode før den blir avbrutt av en 12-dagerspause - en pause så lang at det skjer et betraktelig fall i kondisjonen.</p>
+<p>Den lengste perioden ble avslutta i januar 2019, på nærmere 300 dager - store deler av 2018. Juni 2016 markerte slutten på en nesten like lang treningsperiode.</p>
+<pre class="r"><code>ggplot(data = df_survival) + 
+  geom_point(aes(x = dag_periode, y = fct_reorder(as.factor(dato), dag_periode))) + 
+  labs(x = &quot;Varighet på treningsperiode&quot;, y = &quot;periode_id&quot;, title = &quot;Lengde på periode&quot;) + 
+  scale_x_continuous(limits = c(0, 300))</code></pre>
+<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>Så hvordan ser dette ut, når vi estimerer en kurve for sannsynligheten for treningsperiode-avbrudd?</p>
+<pre class="r"><code>#en kikk på Surv-objektet
+trening_survival = survfit(Surv(dag_periode, hendelse == TRUE)~1, data = df_survival)
+trening_survival</code></pre>
+<pre><code>## Call: survfit(formula = Surv(dag_periode, hendelse == TRUE) ~ 1, data = df_survival)
+## 
+##       n  events  median 0.95LCL 0.95UCL 
+##      15      14      58      36     279</code></pre>
+<pre class="r"><code>temp = broom::tidy(trening_survival)
+
+ggplot(data = temp, aes(x = time, y = estimate))+
+  geom_line() +
+  geom_ribbon(aes(ymin=conf.low,ymax=conf.high),alpha=0.2) +
+  labs(x = &quot;Dagers varighet på treningsperiode&quot;, y = &quot;Sannsynlighet for å fortsette trening&quot;, title = &quot;Sannsynlighet for å fortsette en treningsperiode, etter antall dager&quot;, subtitle = &quot;Kaplan-Meier-kurve&quot;)</code></pre>
+<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>Siden vi bare har 15 observasjoner, hvorav 1 er sensurert, blir sannsynligheten temmelig usikkert estimert. Den starter på mellom 80 % og 100 % rundt to ukers tid, faller ganske krapt fram til rundt to måneder - men faller så mer slakt av. Betyr det at om jeg klarer å holde en treningsperiode oppe i rundt to måneder, så er det blitt en mer innarbeida vane? Kanskje. For å finne ut av det burde jeg også få brukt treningsinformasjonen til noe fornuftig - men det får bli seinere.</p>

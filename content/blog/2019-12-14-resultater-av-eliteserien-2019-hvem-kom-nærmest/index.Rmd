@@ -1,0 +1,81 @@
+---
+title: Resultater av Eliteserien 2019 - hvem kom nærmest?
+author: Eivind
+date: '2019-12-14'
+slug: resultater-av-eliteserien-2019-hvem-kom-nærmest
+categories:
+  - R
+  - fotball
+tags: []
+---
+
+Da var Eliteserien over for i år. Hvordan gikk det med [tippinga](https://suppe-og-analyse.netlify.com/post/eliteserien-2019-hvordan-blir-tabellen-til-slutt/) fra mars? Da bestemte jeg for å legge gjennomsnittet av oddssidenes tipping og avisenes ekspertkommentarer til grunn.
+
+Hvordan ser dette ut opp i mot resultatet? Hvordan ble tabellen til slutt? Jo slik: 
+
+```{r, echo = FALSE, message = FALSE}
+#biblioteker
+library(here)
+library(knitr)
+suppressPackageStartupMessages(library(tidyverse))
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+
+#data
+df = read.csv2(here("content/data/tippeliga_2019.csv"),stringsAsFactors = FALSE, na.strings = "", nrows = 16) %>%
+  select(., -UniBet, - NordicBet)
+
+numeric_vars = names(df)[2:6]
+
+df = mutate(df, Prognose = rowMeans(select(df,numeric_vars),na.rm=TRUE)) %>%
+  arrange(Prognose)
+```
+
+```{r}
+kable(arrange(select(df, Lag, Resultat, MinPrognose = Prognose), Resultat)) 
+```
+
+Som vi ser av tabellen: ikke veldig nærme - men heller ikke helt tilfeldig. 
+
+Hvordan ser dette ut i forhold til de forskjellige prognosene?
+
+```{r}
+temp = gather(df, ID, prognose, Nettavisen:Prognose) %>%
+  mutate(type = ifelse(ID == "Resultat", "Resultat", "Prognose"))
+
+ggplot() + 
+  geom_count(data = filter(temp, type == "Prognose"), aes(x = prognose, y = Lag), colour = "grey") +
+  geom_point(data = filter(temp, type == "Resultat"), aes(x = prognose, y = Lag), colour = "black") +
+  geom_point(data = filter(temp, ID == "Prognose"), aes(x = prognose, y = Lag), colour = "red") +
+  labs(x = "Plassering", y = "Lag", colour = "Prognose eller resultat?")
+```
+
+Hvem er nærmest? Vi bruker RMSE som mål, den gir større straff til store feil:
+
+```{r}
+#RMSE
+rmse <- function(feil){
+    sqrt(mean(feil^2))
+}
+
+temp = data.frame(ID = as.character(), rmse = as.numeric(), stringsAsFactors = FALSE)
+
+feil = df$Resultat - df$Nettavisen
+temp = bind_rows(temp, data.frame(ID = "Nettavisen", rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Oddschecker
+temp = bind_rows(temp, data.frame(ID = "Oddschecker", rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Dagsavisen
+temp = bind_rows(temp, data.frame(ID = "Dagsavisen", rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Dagbladet
+temp = bind_rows(temp, data.frame(ID = "Dagbladet", rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Aftenposten
+temp = bind_rows(temp, data.frame(ID = "Aftenposten", rmse = rmse(feil), stringsAsFactors = FALSE))
+feil = df$Resultat - df$Prognose
+temp = bind_rows(temp, data.frame(ID = "MinPrognose", rmse = rmse(feil), stringsAsFactors = FALSE))
+
+kable(arrange(temp, rmse))
+```
+
+Aftenposten var den beste ekspertpanelet her, fulgt av Dagsavisen. Dagbladet, Oddsen og Nettavisen gjør det alle dårligere. Men forskjellene er ikke veldig store.

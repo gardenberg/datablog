@@ -1,0 +1,94 @@
+---
+title: RaskeRe - en kikk på løpsstatistikk med R
+author: Eivind
+date: '2019-09-22'
+slug: kan-en-løpe-raskere-med-r
+categories:
+  - R
+  - løping
+tags: []
+---
+
+__Hva handler denne artikkelen om?__ _En rask kikk på løpetider fra de siste årenes løp_
+
+Løping er gøy! 
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+#noen pakker
+library(here)
+library(jsonlite)
+library(tidyverse)
+library(lubridate)
+
+#options
+set.seed(1106)
+options("scipen" = 100)
+theme_set(theme_minimal())
+```
+
+Utgangspunktet var at jeg satte meg ned og prøvde å finne ut av hvor mange løp jeg har vært med på de siste årene, og hvordan jeg tidsmessig ligger an. Jeg fant at jeg totalt hadde vært med på 19 løp: 
+
+```{r}
+runs = read_delim(here::here("content/data/runs_sept2019.csv"), ";", escape_double = FALSE, col_types = cols(dato = col_character()), locale = locale(decimal_mark = ",", grouping_mark = "|", encoding = "ISO-8859-1"), trim_ws = TRUE)
+
+runs = mutate(runs, 
+              dato = as.Date(dato, format = "%d.%m.%Y"),
+              year = year(dato),
+              tid_test = hms(tid),
+              tid_minutter = as.period(tid_test, unit = "minutes")
+              )
+
+knitr::kable(arrange(select(runs, dato, `løp`, distanse_km, tid), dato))
+```
+
+Dette er ikke veldig imponerende, men jeg har løpt 2-4 løp i året siden 2013.
+
+```{r}
+ggplot(data = runs) + 
+  geom_bar(aes(x = year)) + 
+  scale_x_continuous(breaks = 2006:2019) + 
+  labs(title = "2 - 4 løp i året siden 2013", x = "År", y = "Antall")
+
+```
+
+Av de 18 løpene er det 7 10-kilometere og 6 halvmaraton
+
+```{r}
+
+ggplot(data = runs) + 
+  geom_bar(aes(x = as.factor(distanse_km))) + 
+  labs(title = "Flest 10 km og halvmaraton", x = "Løpslengde i km", y = "Antall")
+
+```
+
+De lengre løpene bruker jeg rimelig nok lengre tid på.
+
+```{r}
+
+ggplot(data = runs) + 
+  geom_point(aes(x = dato, y = tid_minutter, colour = as.factor(distanse_km))) +
+  scale_y_time() + 
+  labs(title = "Lengre tid på lengre løp")
+
+```
+
+Halvmaraton-tidene har blitt bedre, mens tikilometer-tidene er nokenlunde stabile. Ja, grafen spretter rundt en del, og det er en del som skiller tider rundt 44 min og 50 min, men ikke frykelig mye heller? 
+
+For å få et bedre bilde av det, kan en framstilling av gjennomsnittlig hastighet være bedre egna:
+
+```{r}
+
+ggplot(data = runs) + 
+  geom_point(aes(x = dato, y = tid_minutter, colour = as.factor(distanse_km))) + 
+  geom_line(aes(x = dato, y = tid_minutter, colour = as.factor(distanse_km))) + 
+  facet_wrap(~as.factor(distanse_km), scales = "free_y") +
+  scale_y_time() + 
+  labs(title = "Raskere halvmaraton, stabile tikilometere?")
+
+
+ggplot(data = runs) + 
+  geom_point(aes(x = dato, y = `min/km`, colour = as.factor(distanse_km))) +
+  geom_line(aes(x = dato, y = `min/km`, colour = as.factor(distanse_km))) 
+```
+
+Gir dette noe innsikt som kan hjelpe meg med å løpe raskere? Nei, ikke egentlig. År med mye aktivitet er raskere enn år med lite aktivitet, men det gir jo mening. Hastigheten på halvmaraton og ti-kilometer er ikke veldig ulik, i det store bildet, men i praksis vil jeg mene at forskjellen på 5 blank på kilometeren, og 4 min 30 sekunder er ganske så stor. 

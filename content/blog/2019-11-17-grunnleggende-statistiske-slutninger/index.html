@@ -1,0 +1,196 @@
+---
+title: Grunnleggende statistiske slutninger fra utvalgsundersøkelser
+author: Eivind
+date: '2019-11-17'
+slug: grunnleggende-statistiske-slutninger
+categories:
+  - R
+  - statistikk
+tags: []
+---
+
+
+
+<p><strong>Hva handler denne artikkelen om?</strong> <em>Hvorfor gjennomføre en utvalgsundersøkelse, hvordan et utvalg fra en populasjon forholder seg til populasjonen, og hvordan du kan si noe om hvor sikker du er på at estimatet ditt fra utvalget er i nærheten av det reelle tallet</em></p>
+<p>En grunnleggende arbeidshest i en samfunnsviters verktøyboks er utvalgsundersøkelsen. En smarting fant på et tidspunkt ut at en ikke trengte å spørre alle i en populasjon et spørsmål, for å kunne si noe om hva hele populasjonen mente.</p>
+<p>I følge Ringdals “Enhet og mangfold” var dette en amerikansk nyvinning i mellomkrigstida som først slo igjennom etter andre verdenskrig (Ringdals bok er nå i sin fjerde utgave, ser jeg - selv er jeg den stolte eier av førsteutgaven, <a href="https://www.ssb.no/befolkning/artikler-og-publikasjoner/bokanmeldelse-enhet-og-mangfold-av-kristen-ringdal">anmeldt bl.a. her</a>). Her går historien til utvalgsundersøkelser hånd i hånd med historien til holdningsundersøkelser, drevet fram av bl.a. George Gallupp.</p>
+<p>Rent umiddelbart er jeg litt skeptisk til denne framstillingen - for generaliseringer fra utvalg til populasjon må da ha vært vanlig også før dette? Om ikke i samfunnsvitenskapen, så på andre felt - som i <a href="https://en.wikipedia.org/wiki/Student%27s_t-test">bryggeribransjen</a>? Nyvinningen var nok derfor heller at en brukte etablerte metoder fra andre områder, på samfunnsvitenskapelige sysler.</p>
+<p>Uansett, i dag er utvalgsundersøkelsen en riktig så sterk arbeidshest for en samfunnsviter. Riktignok ikke så sterk som før - med eksplosjonen i tilgjengelighet de siste årene har fallende svarprosenter blitt et problem for alle, over alt.</p>
+<p>Rundt denne formen for undersøkelser finnes det en hel skole av slutningslogikk: <strong>hvordan gjøre en slutning fra et utvalg, til en hel populasjon?</strong></p>
+<ol style="list-style-type: decimal">
+<li>vi lager noe eksempeldata for en hel populasjon</li>
+<li>vi tar ett utvalg fra populasjonen, og ser om det treffer.</li>
+<li>vi tar mange utvalg fra populasjonen, for å vise fram sannsynlighetsfordelinga til estimatet for gjennomsnittverdier.</li>
+<li>ved hjelp av litt matte, beregner vi standardfeil for parameterestimatene fra utvalgene, som sier noe om usikkerheten vår.</li>
+</ol>
+<p>Framstillingen bygger først og fremst på Skogs <a href="https://www.gyldendal.no/Faglitteratur/Samfunnsfag/Statistikk-metode/AA-forklare-sosiale-fenomener">“Å forklare sosiale fenomener”</a>, når jeg har trengt litt fasit-assistanse.</p>
+<pre class="r"><code>library(tidyverse)
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+options(scipen = 100)</code></pre>
+<div id="populasjonens-holdning-til-x" class="section level2">
+<h2>Populasjonens holdning til X!</h2>
+<p>Si at vi har en populasjon med 1000 enheter, som vi ønsker å vite noe om holdningene til på noen spørsmål:</p>
+<ul>
+<li>ett ja/nei-spørsmål (f.eks.: har du hest?)</li>
+<li>ett spørsmål hvor svaret kan oppgis som en kontinuerlig variabel (f.eks.: hva er hesten verdt?)</li>
+<li>ett holdningsspørsmål på en skala fra 1 til 5, fra svært dårlig via ok til svært god (f.eks.: hvor god er du til å ri på hest?).</li>
+</ul>
+<p>Dessverre finner jeg ikke slike data liggende rundt, men jeg konstruerer de.</p>
+<pre class="r"><code>df = data.frame(&quot;ID&quot; = 1:1000, stringsAsFactors = FALSE)
+
+#binomisk sannsynlighet for holdning #1 
+df$holdning_1 = rbinom(1000, 1, 0.5)
+
+#kontinuerlig normaltfordelt variabel på verdi holdning #2
+df$holdning_2 = rnorm(1000, 12500, 2500)
+
+#diskret sannsynlighet
+#trekker denne fra en uniform fordeling, og runder av til nærmeste heltall
+#kunne egentlig også brukt sample() med replacement = TRUE?
+df$holdning_3 = round(runif(1000, min = 1, max = 5))</code></pre>
+<p>Fordelingen av holdningene i populasjonen ser da slik ut:</p>
+<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-3-1.png" width="672" /><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-3-2.png" width="672" /><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-3-3.png" width="672" /></p>
+<p>Her ser vi altså at</p>
+<ul>
+<li>ja eller nei er temmelig likt fordelt i populasjonen (50,4 % sier ja)</li>
+<li>den kontinuerlige variabelen er normalfordelt rundt 12 500.</li>
+<li>2, 3 og 4 er de mest populære svarene på #3, med minst på 5 og noe fler på 1.</li>
+</ul>
+<p>Dette er ikke overraskende, men følger av hvordan variablene er konstruerte. Noe mer støy kunne nok vært lagt inn, for å gjøre det litt mer interessant.</p>
+<p>Dette er holdninger eller verdier i populasjonen vår, bestående av 1000 enheter. Hva så når vi skal gjøre et utvalg?</p>
+</div>
+<div id="utvalgets-holdning-til-x" class="section level2">
+<h2>Utvalgets holdning til X</h2>
+<p>I de aller fleste tilfeller av slike holdningsundersøkelser kan vi imidlertid ikke undersøke hele populasjonens holdning til X. Det er for dyrt, for tidkrevende - og ofte også helt unødvendig. I stedet kan vi trekke et tilfeldig utvalg fra populasjonen. Dette går helt fint, gitt at:</p>
+<ul>
+<li>alle medlemmer har <strong>samme sannsynlighet</strong> for å komme med i utvalget, og</li>
+<li>sjansen for at en enhet kommer med, er <strong>uavhengig</strong> av om bestemte andre enheter kommer med</li>
+</ul>
+<p>Så hvordan ville fordelinga av holdninga sett ut i et sjanseutvalg på f.eks. 100 personer?</p>
+<pre class="r"><code>utvalg = sample_n(df, 100, replace = FALSE)</code></pre>
+<p>Antallet er åpenbart annerledes - men treffer utvalget på samme andeler?</p>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)
+## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-5-1.png" width="672" /><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)
+## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-5-3.png" width="672" /></p>
+<p>Naturlig nok - ikke helt. Men hvor nærme er dette? Og hvor nærme kunne vi sagt at det var, hvis vi ikke hadde kjent de rød verdiene - populasjonsverdiene?</p>
+<p>For å svare på det, må vi en liten omtur om sannsynlighetsfordelinger:</p>
+</div>
+<div id="sannsynlighetsfordeling-av-gjennomsnittsverdier" class="section level2">
+<h2>Sannsynlighetsfordeling av gjennomsnittsverdier</h2>
+<p>Vi har nå en populasjon, og et utvalg fra denne populasjonen som ikke treffer helt på den sanne virkeligheten. Vanligvis kjenner du ikke populasjonens sanne fordeling, eller hvilke egenskaper den har. Så hvordan kan du gjøre slutninger basert på utvalget? Jo, via en teoretiske sannsynlighetsfordeling for egenskaper ved det du måler. Se for det at du trekker mange utvalg fra samme populasjon - hvordan ville denne fordelt seg?</p>
+<p>Hvis vi trekker noen utvalg fra populasjonen vår, kan vi visualisere dette:</p>
+<pre class="r"><code>utvalg = sample_n(df, 100, replace = FALSE)
+utvalg$utvalgsnummer = 1
+
+for(i in 2:100){
+  temp = sample_n(df, 100, replace = TRUE)
+  temp$utvalgsnummer = i
+  utvalg = bind_rows(utvalg, temp)
+}</code></pre>
+<p>Vi kan begynne med det første spørsmålet - ja eller nei-spørsmålet, kodet som 0 og 1. Hvis vi beregner gjennomsnittlig andel som har besvart dette med ja i de ulike utvalgene, så kan vi vise hvordan gjennomsnittene i disse utvalgene fordeler seg.</p>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>Den svarte linja viser fordelinga av gjennomsnittlig andel hesteeiere i 100 utvalg fra populasjonen. Den røde, blå og grønne viser henholdsvis 10, 20 og 50 utvalgsgjennomsnitt. Jo flere utvalg, jo mer bør den sentrere seg rundt der vi - fra over - veit at det faktiske gjennomsnittet ligger.</p>
+<p>Tilsvarende øvelse kan gjentas for den kontinuerlige variabelen, og den diskrete variabelen.</p>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
+<p>Så hva er poenget med dette? Deto flere utvalg en trekker fra en populasjon, jo flere av utvalgene vil ha gjennomsnitt i nærheten av det sanne utvalget. Dette gjelder særlig for større utvalg (over ca. 50?). For de fleste praktiske formål, hvor vi ikke kjenner populasjonsverdien, og vi ikke kan måle den direkte, er det også upraktisk å ta et stort antall utvalgsundersøkelser. Men fordi vi ser at parameterestimatene i et stort antall utvalg er om lag normalfordelt (også for verdier som ikke selv er normalfordelte), kan vi estimere hvor usikre vi er på at den sanne populasjonen ligger innafor et intervall rundt punktestimatet vårt.</p>
+</div>
+<div id="slutninger-om-en-andel" class="section level2">
+<h2>Slutninger om en andel</h2>
+<p>Den unøyaktigheten vi får når vi bruker andelen fra et utvalg som estimat for andelen i en populasjon, kan måles med standardfeilen til estimatet. En vanlig tommelfingerregel for unøyaktighetsberegninger er ca. to ganger standardfeilen på hver side av parameterestimatet.</p>
+<pre class="r"><code>utvalg = filter(utvalg, utvalgsnummer == 1)
+
+# Når populasjonsandelen er kjent
+
+#standardfeil for et estimat til en andel
+p = sum(df$holdning_1/length(df$holdning_1)) #faktisk andel i populasjonen
+sem = sqrt(p*(1-p))/sqrt(length(utvalg$ID))
+
+temp = data.frame(&quot;populasjonsparameter_kjent&quot; = FALSE, &quot;andel&quot; = p, &quot;standardfeil&quot; = sem)
+
+# Når populasjonsandelen er ukjent
+
+#standardfeil for et estimat til en andel
+p_hat = sum(utvalg$holdning_1/length(utvalg$holdning_1)) #parameterestimatet fra utvalget
+sem = sqrt(p_hat*(1-p_hat))/sqrt(length(utvalg$ID))
+
+temp = bind_rows(temp, data.frame(&quot;populasjonsparameter_kjent&quot; = FALSE, &quot;andel&quot; = p_hat, &quot;standardfeil&quot; = sem))</code></pre>
+<pre class="r"><code>knitr::kable(temp)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">populasjonsparameter_kjent</th>
+<th align="right">andel</th>
+<th align="right">standardfeil</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">FALSE</td>
+<td align="right">0.544</td>
+<td align="right">0.0498060</td>
+</tr>
+<tr class="even">
+<td align="left">FALSE</td>
+<td align="right">0.560</td>
+<td align="right">0.0496387</td>
+</tr>
+</tbody>
+</table>
+<p>I mitt eksempel (som bør være det samme som eksempelet som vises her, siden jeg har brukt set.seed()) er andelen som har svart ja på holdningsspørsmål 1 54,4 % i populasjonen på 1000 personer. Som vi ser av formelen, avgjøres sikkerheten av størrelsen på utvalget og størrelsen på andelen i populasjonen: Jo nærmere den faktiske andelen er 50 %, jo større usikkerhet. Og jo større utvalg, destor mindre usikkerhet. I vårt tilfelle er andelen ganske nær 50 %, og utvalget er på 100 personer. Standardfeilen er derfor på ca. 5 %, eller mellom 44 % og 64 %</p>
+<p>I utvalget vi har tatt, har 53 % svart ja. Standardfeilen er veldig lik her, som i eksempelet over - faktisk kan en vel si helt lik, når de 8 første desimalene er like. Dvs. at standardfeilen tilsier at den sanne verdien ligger et sted mellom 43 % og 63 %.</p>
+</div>
+<div id="kontinuerlig-variabel" class="section level2">
+<h2>Kontinuerlig variabel</h2>
+<pre class="r"><code>#når gjennomsnittet i populasjonen er kjent
+
+#standardfeil for estimatet til gjennomsnittet av en kontinuerlig, normalfordelt variabel
+s = mean(df$holdning_2) #gjennomsnitt i populasjonen
+sem = s/sqrt(length(utvalg$ID))
+
+temp = data.frame(&quot;populasjonsparameter_kjent&quot; = TRUE, &quot;gjennomsnitt&quot; = s, &quot;standardfeil&quot; = sem)
+
+#når gjennomsnittet i populasjonen er ukjent
+
+s_hatt = mean(utvalg$holdning_2) #parameterestimatet for gjennomsnitt
+sem = s_hatt/sqrt(length(utvalg$ID))
+
+temp = bind_rows(temp, data.frame(&quot;populasjonsparameter_kjent&quot; = FALSE, &quot;gjennomsnitt&quot; = s_hatt, &quot;standardfeil&quot; = sem))</code></pre>
+<pre class="r"><code>knitr::kable(temp)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">populasjonsparameter_kjent</th>
+<th align="right">gjennomsnitt</th>
+<th align="right">standardfeil</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">TRUE</td>
+<td align="right">12392.58</td>
+<td align="right">1239.258</td>
+</tr>
+<tr class="even">
+<td align="left">FALSE</td>
+<td align="right">12785.56</td>
+<td align="right">1278.556</td>
+</tr>
+</tbody>
+</table>
+<p>Her er gjennomsnittsverdien i populasjonen 12 393 (kroner for en hest). Den beregnede standardfeilen for utvalg er 1 239, dvs. at ca. 95 % av utvalg vil være mellom 9 915 og 14 871.</p>
+<p>For utvalget ser vi at gjennomsnittet er på 12 575 (kroner for en hest). Dette er ikke langt unna den sanne verdien - men det er helt tilfeldig. Et konfidensintervall rundt dette punktestimatet vil være fra 10 061 til 15 089. Dvs. et ganske stort sprang fra rundt 10 til 15 000 kroner.</p>
+</div>
+<div id="kategorisk-variabel" class="section level2">
+<h2>Kategorisk variabel</h2>
+<p>En tilsvarende tilnærming som denne kan brukes for vårt holdningsspørsmål nr. 3. Her kunne vi både anslått standardfeil for andelsestimater (“hvor stor andel liker ikke hest?”), og for gjennomsnittsestimtatet (“hva er den gjennomsnittlige holdninga til hest?”). Matematikken følger samme mønster som over.</p>
+</div>

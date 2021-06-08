@@ -1,0 +1,19 @@
+---
+title: Halvmigrering til Hugo
+author: Eivind
+date: '2019-03-01'
+slug: halvmigrering-til-hugo
+categories:
+  - meg
+tags: []
+---
+
+Etter å ha latt bloggen min [Kontext](https://bedreverden.wordpress.com/) ligge i *regneregne* fem og et halvt år, våknet jeg opp en morgen og tenkte: på tide å skrive noe på internett!
+
+Når jeg kikka på [GitHub-repoene](https://github.com/gardenberg/) mine, innså jeg at flere av dem begynte å likne på blogg-artikler om ymse temaer. I morgen-ørska på bussen snubla jeg så over en artikkel om å [flytte bloggen din til Blogdown](https://mikeyharper.uk/migrating-to-blogdown/). Siden jeg allerede bruker R som go-to-verktøy for ymse ting, virket dette rimelig. 
+
+Skulle jeg da migrere alle de gamle postene fra wordpress-bloggen? En liten kikk i [blogdown-dokumentasjonen](https://bookdown.org/yihui/blogdown/from-wordpress.html) tilsa nei. Jeg kopierte derfor heller over de tekstene jeg var spesielt fornøgd med, heller enn å finne igjen gamle innloggingsdetaljer og kaste meg over en aldri så liten terskel i Python-basert XML-rensing. 
+
+Siden denne bloggen p.t. redigeres i RStudio med blogdown, pushes til GitHub, hvor den så auto-synces med Netlify, er den basert på RMarkdown. Det er et flott tekstverktøy som tillater innebygde R-skrevne analyser. Så derfor heter bloggen noe med analyser.
+
+Tittelen, sier du? Hvor kommer suppa inn? Vel, egentlig var jeg også på utkikk etter et sted å legge alle de ørten matoppskriftene jeg har samla opp. Det ser enn så lenge ikke ut til at dette Hugo-temaet åpner for så mye fancy i den retningen. Vi får se.
