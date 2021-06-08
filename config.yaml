@@ -2,7 +2,7 @@ baseurl: https://nervous-shannon-4b6192.netlify.app/
 title: Suppe og analyse - test
 author: Eivind Hageberg
 canonifyurls: yes
-languagecode: en
+languagecode: no
 theme: hugo-tanka
 enableEmoji: yes
 hasCJKLanguage: no
