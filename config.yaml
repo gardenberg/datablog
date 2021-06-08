@@ -22,7 +22,7 @@ params:
     - python
     - stan
   progressively: no
-  sitename: Hugo Tanka Theme
+  sitename: Suppe og analyse - test
   uselatex: yes
 markup:
   goldmark:
