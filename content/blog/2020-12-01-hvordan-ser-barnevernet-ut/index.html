@@ -5,9 +5,10 @@ date: '2020-12-01'
 slug: hvordan-ser-barnevernet-ut
 categories: []
 tags: []
+draft: false
 ---
 
-<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler dette om?</strong> <em>Det norske barnevernet er mye diskutert - men hvordan ser det egentlig ut? Hvor mange jobber der? Hvor jobber de? Vi henter noe data fra SSB, lager noen figurer og kart</em></p>
@@ -90,18 +91,18 @@ df = left_join(df, select(undtil, Region, barn_undersøkelser_tiltak = value))</
 <p>Oppsummert var det i 2020 om lag 6 261 årsverk i det kommunale barnevernet.</p>
 <p>Antallet ansatte i barnevernet følger i stor grad størrelsen på kommunen. Siden det er veldig stor forskjell på den største og den minste kommunen i Norge, betyr det at de kommunale barnevernstjenestene også har veldig forskjellig størrelse: 25 % av kommunene har 3 årsverk i barnevernet, 50 % har litt over 5,5 årsverk, mens gjennomsnittet for alle ligger på 17,5.</p>
 <pre><code>## Warning: Removed 11 rows containing non-finite values (stat_bin).</code></pre>
-<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>På figuren har jeg også markert 25 %, 50 % og 75 %-kvartiler, altså punktene hvor 25 % av observasjonene ligger til venstre, 50 %, osv. 75 % av kommunene har 16,5 stillinger. Kun 9 kommuner har over 100 årsverk i barnevernstjenesten, men disse 9 kommunene utgjør til gjengjeld 1/3 av alle årsverk i det kommunale barnevernet. Særlig Oslo skiller seg ut med 723,4 årsverk.</p>
 <p>Dette er i grunnen interessant i seg selv, og sier noe om hva en bør tenke på når en analyserer statistikk for kommune-Norge: kommunene er i bunn og grunn vilt forskjellig.</p>
 <p>Oslo ligger langt til høyre - både fordi det er en mye større kommune enn de andre, og fordi de på barnevernsområdet er spesielle: mens andre kommuner leverer noen tjenester selv, og så får andre tjenester fra det statlige barnevernet (Bufetat), står Oslo for tjenestene fra Bufetat på egen hånd.</p>
 <p>Men siden 75 % av tjenestene ligger på 16,5 stillinger, er det ikke bare Oslo som er avvikende ut fra en normalfordelt statistikkforståelse:</p>
 <pre><code>## Warning: Removed 11 rows containing non-finite values (stat_boxplot).</code></pre>
-<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>Og det skyldes jo at dette ikke er normalfordelt, det likner mer på en Poisson-fordeling. En må selvsagt ta kommunestørrelsen med i betraktning:</p>
 <pre><code>## `geom_smooth()` using method = &#39;loess&#39; and formula &#39;y ~ x&#39;</code></pre>
 <pre><code>## Warning: Removed 11 rows containing non-finite values (stat_smooth).</code></pre>
 <pre><code>## Warning: Removed 11 rows containing missing values (geom_point).</code></pre>
-<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <table>
 <thead>
 <tr class="header">
@@ -140,7 +141,7 @@ df = left_join(df, select(undtil, Region, barn_undersøkelser_tiltak = value))</
 <p>Dette kan være indikatorer ved ulike forhold, f.eks. si noe om hvordan barnevernet er prioritert i kommunen, eller om det er et stort innslag av kommunale eller private tiltak, eller kapasitet og arbeidsbelastning for de som arbeider i barnevernet.</p>
 <p>Om vi summerer antallet barn i kommunen fra 0 til 17 år, og fordeler på KOSTRA-tallene for stillinger i barnevernet, ser vi en ganske stor spredning - men på en fordeling hvor gjennomsnitt gir mening: Gjennomsnittet ligger på 171 barn i kommunen per stilling i barnevernstjenesten. 250 kommuner ligger på +/- 60 barn rundt dette snittet.</p>
 <pre><code>## Warning: Removed 11 rows containing non-finite values (stat_bin).</code></pre>
-<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 </div>
 <div id="antall-barn-med-undersøkelse-eller-tiltak-pr.-årsverk-i-barnevernt" class="section level1">
 <h1>Antall barn med undersøkelse eller tiltak pr. årsverk i barnevernt</h1>
@@ -148,5 +149,5 @@ df = left_join(df, select(undtil, Region, barn_undersøkelser_tiltak = value))</
 <p>I gjennomsnitt har en kommune 13 barn med undersøkelser eller tiltak pr. årsverk i barnevernet. 300 av kommunene ligger mellom 10 og 20 barn med undersøkelse eller tiltak pr. årsverk.</p>
 <p>NB: ettersom stillingene her inkluderer alle funksjoner, kan en mulig feilkilde være at det varierer mellom kommuner hvorvidt de bruker private leverandører til ulike hjelpetiltak.</p>
 <pre><code>## Warning: Removed 17 rows containing non-finite values (stat_bin).</code></pre>
-<p><img src="/post/2020-12-01-hvordan-ser-barnevernet-ut_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 </div>
