@@ -5,6 +5,7 @@ date: '2020-12-01'
 slug: hvordan-ser-barnevernet-ut
 categories: []
 tags: []
+draft: true
 ---
 
 __Hva handler dette om?__ _Det norske barnevernet er mye diskutert - men hvordan ser det egentlig ut? Hvor mange jobber der? Hvor jobber de? Vi henter noe data fra SSB, lager noen figurer og kart_

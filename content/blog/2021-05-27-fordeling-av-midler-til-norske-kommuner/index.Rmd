@@ -5,6 +5,7 @@ date: '2021-01-01'
 slug: []
 categories: []
 tags: []
+draft: true
 ---
 
 __Hva handler dette om?__ _Kjapp kikk på hvordan midler fordeles mellom kommuner_

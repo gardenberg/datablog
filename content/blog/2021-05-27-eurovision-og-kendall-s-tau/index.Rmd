@@ -5,6 +5,7 @@ date: '2021-05-21'
 slug: []
 categories: []
 tags: []
+draft: true
 ---
 
 __Hva handler dette om?__ _Det er på tide med Eurovision! Glam, glitter og pappmusikk - og en anledning til å ha en liten konkurranse, og lære litt om statistikk for rankinger_
