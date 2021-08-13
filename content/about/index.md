@@ -1,12 +1,16 @@
 ---
-date: "2020-01-01"
+date: "2021-08-13"
 description: A description of the page
 menu: main
-title: About Hugo Tanka
+title: Hei!
 ---
 
-Lorem ipsum dolor sit amet, ex has sale ullum corrumpit, sea dicam nostrum sensibus ad. Porro tritani persecuti te sed. Omittam dissentias pro ex. Atqui luptatum duo id. Eros minim eam ex, novum elitr accusam quo in. Nec ne audire euripidis, [mea qualisque consetetur cu](https://example.com). Suspendisse volutpat sem a risus euismod convallis.
+> Vi stoler på suppe. Alle andre må vise data.
 
-In modus congue feugait eos. In nec nonumy volutpat corrumpit, sea assentior quaerendum no, cum affert scripta ea. No nihil voluptaria pro. [Erat democritum mei no](https://example.com), homero quodsi aliquando id mel, ridens civibus molestiae et nam.
+Det er noe alle statsvitere, data-entusiaster og folk over gjennomsnittet glad i metoder og suppe kan skrive under på. 
 
-Ea eam postea facilisi. Nullam forensibus consequuntur usu ea, no ius consul delectus periculis. Eam veri numquam an. Et partiendo gubergren eam. Quod iudicabit has ex, eam diam facilisi eu, elitr aliquip no eum.
+Når jeg ikke lager blogposter om data, R og andre spennende ting, jobber jeg i Barne-, ungdoms- og familiedirektoratets analysesavdeling. [Statistikk om barnevernet](https://bufdir.no/Statistikk_og_analyse/Barnevern/Oppsummert_status_i_tall_for_barnevernet/) og [monitorering av kommunalt barnevern](https://bufdir.no/Statistikk_og_analyse/Barnevern_kommunemonitor/#/) er noe av det jeg driver med her.  Tidligere har jeg blant annet...
+
+- arbeida med [statistikk-sidene](https://www.imdi.no/tall-og-statistikk/) hos IMDi,,
+- skrevet den [årlige rapporteringa](https://www.imdi.no/globalassets/dokumenter/arsrapporter-og-styrende-dokumenter/arsrapport-2017/integrering-i-norge-overordnet-analyse-2017.pdf) om hvordan det Egentlig går med integreringa. 
+- før IMDi jobba jeg med landbrukspolitikk, og skrevet bl.a. om [Korn og krise. Hvorfor Norge bør starte kornlagring](https://www.agrianalyse.no/publikasjoner/korn-og-krise-article335-856.html).
