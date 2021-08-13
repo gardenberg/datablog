@@ -30,7 +30,7 @@ set.seed(1106)
 options(scipen = 100)
 
 #data
-df <- read.csv2(here::here("content/data/runtastic/runtastic_1.csv"), stringsAsFactors=FALSE)
+df <- read.csv2("runtastic_1.csv", stringsAsFactors=FALSE)
 
 df = mutate(df, 
             start_time = as.POSIXct(start_time/1000, origin="1970-01-01"),
@@ -50,13 +50,18 @@ df_alle = data.frame(dato = seq(from = as.Date(ymd_hms(min(df$start_time))), to 
 #her må jeg også håndtere datoer som har to treningsøkter registrert.
 ```
 
-#Dagers pause
-Så kan jeg kartlegge hvor mange dagers pause jeg har mellom treningsøkter. I samme slengen legger jeg på en identifikator, som identifiserer hver treningsøkt + dagene med restitusjon som tilhørene til en "økt".
+# Dagers pause
+Så kan jeg kartlegge hvor mange dagers pause jeg har mellom treningsøkter. I samme slengen legger jeg på en identifikator, som identifiserer hver treningsøkt + dagene med restitusjon som tilhørende til en "økt".
 
 ```{r}
 i = 1
 j = 0
 `økt` = 0 
+
+df_alle$dager_siden_trening = NULL
+df_alle$økt_id = NULL
+
+#faktisk
 for(i in 1:length(df_alle$dato)){
   if(df_alle$er_trening[[i]] == TRUE){
     j = 0
@@ -70,6 +75,15 @@ for(i in 1:length(df_alle$dato)){
     df_alle$`økt_id`[[i]] = `økt`
   }
 }
+
+#av en eller anna grunn, jeg forstår ikke hvorfor, blir variablene som redigeres her
+#lister. Dette er jo noe nytt R har begynt med siden jeg først lagde denne
+#unlister dem ganske enkelt ???
+
+df_alle = mutate(df_alle,
+                 dager_siden_trening = unlist(dager_siden_trening),
+                 `økt_id` = unlist(`økt_id`)
+                 )
 
 temp1 = group_by(df_alle, `økt_id`) %>%
   summarise(dager_restitusjon = max(dager_siden_trening))
@@ -155,7 +169,8 @@ for(i in 2:length(df_alle$dato)){
     df_alle$periode[[i]] = periode
   }
 }
-  temp[a - (min(temp$pauselengde)-1),2] = max(df_alle$periode)
+ df_alle$periode = unlist(df_alle$periode)
+ temp[a - (min(temp$pauselengde)-1),2] = max(df_alle$periode)
 }
 
 

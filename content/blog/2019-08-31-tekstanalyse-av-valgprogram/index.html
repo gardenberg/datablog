@@ -9,6 +9,7 @@ categories:
 tags: []
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>En kikk på valgprogrammene for kommunevalget i Oslo</em></p>
@@ -25,19 +26,18 @@ library(tidytext)
 library(here)
 library(tm)
 library(topicmodels)
+library(broom)
 
 #settings
 theme_set(theme_minimal())
 set.seed(1106)</code></pre>
-<div id="datagrunnlaget" class="section level2">
-<h2>Datagrunnlaget</h2>
-<p>Alle partiene har PDF-filer av valgprogrammene sine for Oslo tilgjengelig. PDF-filer lar seg lese inn, men krever litt tygging for å få fjerna punktsetting, nummer og lignende.</p>
+<p>##Datagrunnlaget
+Alle partiene har PDF-filer av valgprogrammene sine for Oslo tilgjengelig. PDF-filer lar seg lese inn, men krever litt tygging for å få fjerna punktsetting, nummer og lignende.</p>
 <p>Helt til slutt fjerner jeg også stoppord - 176 vanlige ord i det norske språket som jevnt over brukes mye (i, og, jeg, det, …).</p>
 <pre class="r"><code>#med TM
-mappe &lt;- here(&quot;content/data/valgprogram&quot;)
 
 # lag et korpus fra pdf-filene
-converted &lt;- VCorpus(DirSource(mappe), readerControl = list(reader = readPDF, language = &quot;nb&quot;)) %&gt;% 
+converted &lt;- VCorpus(DirSource(&quot;valgprogram&quot;), readerControl = list(reader = readPDF, language = &quot;nb&quot;)) %&gt;% 
   DocumentTermMatrix(., control = list(language = &quot;nb&quot;, 
                                        removePunctuation = TRUE,
                                        removeNumbers = TRUE,
@@ -62,7 +62,8 @@ ggplot(data = temp, aes(x = fct_reorder(parti, antall_termer), y = antall_termer
   geom_col() + 
   coord_flip() + 
   labs(title = &quot;Rødt har flest unike termer i partiprogrammet&quot;, subtitle = &quot;Partienes valgprogram for Oslo, 2019-2023&quot;, y = &quot;Antall termer&quot;,x = &quot;Parti&quot;)</code></pre>
-<p><img src="/post/2019-08-31-tekstanalyse-av-valgprogram_files/figure-html/unnamed-chunk-3-1.png" width="672" /> ###Hvilke ord er mest brukt i valgprogrammene?</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" />
+###Hvilke ord er mest brukt i valgprogrammene?</p>
 <pre class="r"><code>temp = group_by(df, term) %&gt;%
   summarise(., antall = sum(antall)) %&gt;%
   top_n(., 10, antall)
@@ -71,12 +72,9 @@ ggplot(data = temp, aes(x = fct_reorder(term, antall), y = antall)) +
   geom_col() + 
   coord_flip() + 
   labs(title = &quot;Oslo det mest brukte ordet i Oslo-valgkampen&quot;, y = &quot;Antall ganger brukt&quot;,x = &quot;Ord&quot;)</code></pre>
-<p><img src="/post/2019-08-31-tekstanalyse-av-valgprogram_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>De øvrige ordene er heller ikke spesielt overraskende: Gode, trygge, sikre honnørord, som antakeligvis brukes til å beskrive både innsatsen i forrige periode, innsatsen framover, og hvordan kommunen vil bli med akkurat Dette Partiet ved roret. Det eneste subsansielle som kommer fram her er barn - noe som ikke er rart, en sentral del av kommunepolitikk handler nettopp om barna.</p>
-</div>
-</div>
-<div id="hva-er-de-viktigste-ordene-for-de-ulike-partiene" class="section level2">
-<h2>Hva er de viktigste ordene for de ulike partiene?</h2>
+<p>##Hva er de viktigste ordene for de ulike partiene?</p>
 <p>En ganske usofistikert måte å måle dette på er ved å ganske enkelt telle opp alle ordene, og så se hvilke ord hvert enkelt parti bruker mest.</p>
 <pre class="r"><code>temp = group_by(df, parti) %&gt;%
   top_n(10, wt = antall) %&gt;%
@@ -88,7 +86,7 @@ ggplot(data = temp, aes(x = reorder_within(term, antall, parti), y = antall, fil
   scale_x_reordered() + 
   coord_flip() + 
   labs(title = &quot;Oslo og eget parti langt det mest vanlige å omtale&quot;, subtitle = &quot;Ti mest brukte ord i  valgprogrammet for 2019-2023&quot;, x = &quot;Parti&quot;, y = &quot;Antall ganger ordet er nevnt&quot;)</code></pre>
-<p><img src="/post/2019-08-31-tekstanalyse-av-valgprogram_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>Ordene skiller seg ikke veldig fra hverandre. Alle snakker mest om Oslo.</p>
 <ul>
 <li>Ap snakker om seg selv. FrP snakker om kommune-kommune-kommune.</li>
@@ -100,10 +98,8 @@ ggplot(data = temp, aes(x = reorder_within(term, antall, parti), y = antall, fil
 <li>SV vil …sikre kommune gjennom ny kommune?</li>
 <li>Venstre slår seg også løs med sikring av noe bedre.</li>
 </ul>
-</div>
-<div id="hva-skriver-partiene-om-som-de-andre-ikke-nevner" class="section level2">
-<h2>Hva skriver partiene om, som de andre ikke nevner?</h2>
-<p>Ikke så stort å lære av dette, egentlig. En potensielt nyttigere tanke er å finne fram til unike ord for hvert parti, som i mindre grad brukes av de andre partiene. Dette er såkalte tf_idf-ord, hvor ord som brukes mye på tvers av dokumenter (her, partiprogram) får lavere vekt, mens ord som brukes lite på tvers får høyere vekt.</p>
+<p>##Hva skriver partiene om, som de andre ikke nevner?
+Ikke så stort å lære av dette, egentlig. En potensielt nyttigere tanke er å finne fram til unike ord for hvert parti, som i mindre grad brukes av de andre partiene. Dette er såkalte tf_idf-ord, hvor ord som brukes mye på tvers av dokumenter (her, partiprogram) får lavere vekt, mens ord som brukes lite på tvers får høyere vekt.</p>
 <pre class="r"><code>program_ord = bind_tf_idf(df, term, parti, antall)
 
 temp = group_by(program_ord, parti) %&gt;%
@@ -115,7 +111,8 @@ ggplot(data = temp, aes(x = reorder_within(term, tf_idf, parti), y = tf_idf, fil
   scale_x_reordered() + 
   coord_flip() + 
   labs(title = )</code></pre>
-<p><img src="/post/2019-08-31-tekstanalyse-av-valgprogram_files/figure-html/unnamed-chunk-6-1.png" width="672" /> (Merk her at top_n()-funksjonen tar med flere ord hvis rangeringa er uavgjort - så arbeiderpartiet får flere ord)</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="672" />
+(Merk her at top_n()-funksjonen tar med flere ord hvis rangeringa er uavgjort - så arbeiderpartiet får flere ord)</p>
 <p>Ikke overraskende snakker fortsatt alle partiene mest om seg.</p>
 <ul>
 <li>Ap snakker mer om fengsel, lønnstilskudd, språkkunnskaper og anstendighet enn de andre.</li>
@@ -128,6 +125,7 @@ ggplot(data = temp, aes(x = reorder_within(term, tf_idf, parti), y = tf_idf, fil
 <li>Venstre - de vil ha småhus, sexarbeidere, rusbrukere og skolebibliotek.</li>
 </ul>
 <p>Denne indikatoren plukka opp på en god måte hva de ulike partiene er opptatt av, og skriver mer om enn andre partier. Men gir det en pekepinn på hva en skal stemme? Nja. En bedre indikator hadde vært om en kunne identifisert mer substansielle temaer på tvers av partiprogrammene, som f.eks. skole, slik at en kunne sett hvor mye hvert enkelt partiprogram bidro til dette temaet.</p>
+</div>
 <div id="hvilke-temaer-tar-programmene-opp" class="section level3">
 <h3>Hvilke temaer tar programmene opp?</h3>
 <p>Og det kan vi - kanskje. Med LDA - Latent Dirichlet Allocation - kan en estimere hvordan ett dokument består av flere tema, og ett tema består av flere ord på tvers av dokumenter. Så dermed kunne en - kanskje - se om f.eks. partiprogrammene tematiserer skole i ulik grad.</p>
@@ -146,7 +144,7 @@ ggplot(data = tema_topp, aes(reorder_within(term, beta, topic) , beta, fill = fa
   facet_wrap(~topic, scales = &quot;free&quot;) +
   coord_flip() + 
   scale_x_reordered()</code></pre>
-<p><img src="/post/2019-08-31-tekstanalyse-av-valgprogram_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <p>Viser seg at denne algoritmen identifiserer partiene, heller enn temaene innad i partiprogrammene. Dette gjelder uansett hvilken k vi setter på LDA-funksjonen: Det mest gjenkjennelige i dokumenthaugen er skillene mellom partiprogrammene.</p>
 <p>Hvis vi snur på flisa, og ser på sannsynlighetene for at en spesifikk tema hører til et spesifikt dokuments, ser vi dette veldig tydelig:</p>
 <pre class="r"><code>tema_dokument = tidy(model_1, matrix = &quot;gamma&quot;)
@@ -154,13 +152,10 @@ ggplot(data = tema_topp, aes(reorder_within(term, beta, topic) , beta, fill = fa
 ggplot(data = tema_dokument, aes(factor(topic), gamma)) +
   geom_boxplot() +
   facet_wrap(~document)</code></pre>
-<p><img src="/post/2019-08-31-tekstanalyse-av-valgprogram_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p>Bildet er riktignok ikke helt 100 % krystallklart: Høyres partiprogram har biter som også er identifisert i KrFs partiprogram</p>
-</div>
-</div>
-<div id="oppsummert" class="section level2">
-<h2>Oppsummert</h2>
-<p>Når ulike algoritmer raskt lar seg kjøre, og outputen enkelt lar seg plotte, så er det lett å glemme det viktigste i en slik analyse: Selve analysen. Hva er det vi har sett her?</p>
+<p>##Oppsummert
+Når ulike algoritmer raskt lar seg kjøre, og outputen enkelt lar seg plotte, så er det lett å glemme det viktigste i en slik analyse: Selve analysen. Hva er det vi har sett her?</p>
 <p>De mest brukte ordene skiller seg ikke veldig fra hverandre, men alle partiene er selvsagt mest opptatt av seg selv. Det gjør også at når vi prøver å finne tverrgående tema, så feiler det - vi finner kun igjen partiprogrammene (med en interessant overlapp mellom H og KrF). Det kan ganske enkelt skyldes at datagrunnlaget er for lite - men det kan også tenkes at selv om de alle er like i de mest brukte ordene, så har de ulike nok ordvalg til at de framstår som distinkte.</p>
 <p>Alle partiene har også mer unike saker, som de andre i mindre grad snakker om. Det er imidlertid uklart fra denne gjennomgangen hvor stor plass f.eks. samisk politikk tar for Oslo SV - men antakeligvis er bærekraftsmålene en viktig komponent hos MDG.</p>
 </div>

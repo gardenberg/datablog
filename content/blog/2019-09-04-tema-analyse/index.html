@@ -8,6 +8,7 @@ categories:
 tags: []
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>En kikk på valgprogrammene for kommunevalget i Oslo, og hvilke stemninger som finnes der</em></p>
@@ -26,14 +27,12 @@ library(tm)
 #settings
 theme_set(theme_minimal())
 set.seed(1106)</code></pre>
-<div id="datagrunnlaget" class="section level2">
-<h2>Datagrunnlaget</h2>
-<p>Alle partiene har PDF-filer av valgprogrammene sine for Oslo tilgjengelig. PDF-filer lar seg lese inn, men krever litt tygging for å få fjerna punktsetting, nummer og lignende.</p>
+<p>##Datagrunnlaget
+Alle partiene har PDF-filer av valgprogrammene sine for Oslo tilgjengelig. PDF-filer lar seg lese inn, men krever litt tygging for å få fjerna punktsetting, nummer og lignende.</p>
 <pre class="r"><code>#med TM
-mappe &lt;- here(&quot;content/data/valgprogram&quot;)
 
 # lag et korpus fra pdf-filene
-converted &lt;- VCorpus(DirSource(mappe), readerControl = list(reader = readPDF, language = &quot;nb&quot;)) %&gt;% 
+converted &lt;- VCorpus(DirSource(&quot;valgprogram&quot;), readerControl = list(reader = readPDF, language = &quot;nb&quot;)) %&gt;% 
   DocumentTermMatrix(., control = list(language = &quot;nb&quot;, 
                                        removePunctuation = TRUE,
                                        removeNumbers = TRUE, 
@@ -50,7 +49,7 @@ names(df_programmer) = c(&quot;parti&quot;, &quot;term&quot;, &quot;antall&quot;
 <p>En tekst består av summen av ord, og en teksts stemning består av summen av ordenes stemning. For å fastslå stemning er en mulig tilnærming å bruke et leksikon eller ordbok: noen har koda et sett med ord, og hvilken stemning de utgjør. For norsk har jeg funnet Finn Årup Nielsens ordbok fra 2011 på Github, AFINN (<a href="https://github.com/gardenberg/afinn">fork</a> her). Den kan leses inn på denne litt clunky måten (regex er ikke min sterke side).</p>
 <p>Disse dataene koder ord på en skala fra -5 (mest negativ) til +5 (mest positiv)</p>
 <pre class="r"><code>#sentiment-data
-sentiment &lt;- read_delim(here(&quot;content/data/AFINN-no-165.txt&quot;), &quot;|&quot;, escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
+sentiment &lt;- read_delim(&quot;AFINN-no-165.txt&quot;, &quot;|&quot;, escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
 sentiment$verdi = parse_number(sentiment$X1)
 sentiment$tekst = gsub(pattern = &quot;[-][012345]|[012345]&quot;, replacement = &quot;&quot;, x = sentiment$X1)
 sentiment$tekst = gsub(pattern = &quot;\t&quot;, replacement = &quot;&quot;, x = sentiment$tekst)
@@ -60,7 +59,7 @@ sentiment = select(sentiment, -X1)
 sentiment = filter(sentiment, is.na(verdi) == FALSE) %&gt;%
   filter(., verdi &lt; 6)</code></pre>
 <p>Det er 3 211 ord i ordboka. Tabellen under lister opp antallet ord i hver verdi-kategori. Det er kun 13 ord som er mest negative, og 4 ord i den mest positive kategorien. De fleste ordene er å finne i -2-kategorien. Faktisk ser det ut til at om lag 2 000 av ordene er negative, mens nærmere 1 000 er positive. Er dette en trend ved det norske språket, eller ved ordboka? Jeg vil anta det siste.</p>
-<p><img src="/post/2019-09-04-tema-analyse_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>Vi tar et tilfeldig utvalg på ett ord fra hver verdikategori:</p>
 <pre class="r"><code>temp = group_by(sentiment, verdi) %&gt;%
   sample_n(., 1)
@@ -75,43 +74,43 @@ knitr::kable(temp)</code></pre>
 <tbody>
 <tr class="odd">
 <td align="right">-5</td>
-<td align="left">cocksuckers</td>
+<td align="left">tispe</td>
 </tr>
 <tr class="even">
 <td align="right">-4</td>
-<td align="left">mistet datteren</td>
+<td align="left">terningkast en</td>
 </tr>
 <tr class="odd">
 <td align="right">-3</td>
-<td align="left">ofrene</td>
+<td align="left">skyld</td>
 </tr>
 <tr class="even">
 <td align="right">-2</td>
-<td align="left">sultet</td>
+<td align="left">druknet</td>
 </tr>
 <tr class="odd">
 <td align="right">-1</td>
-<td align="left">later</td>
+<td align="left">dump</td>
 </tr>
 <tr class="even">
 <td align="right">0</td>
-<td align="left">en type</td>
+<td align="left">nb</td>
 </tr>
 <tr class="odd">
 <td align="right">1</td>
-<td align="left">ivrig</td>
+<td align="left">forlenge</td>
 </tr>
 <tr class="even">
 <td align="right">2</td>
-<td align="left">inspirerer</td>
+<td align="left">behagelig</td>
 </tr>
 <tr class="odd">
 <td align="right">3</td>
-<td align="left">beste</td>
+<td align="left">riktig retning</td>
 </tr>
 <tr class="even">
 <td align="right">4</td>
-<td align="left">strømmende</td>
+<td align="left">rofl</td>
 </tr>
 <tr class="odd">
 <td align="right">5</td>
@@ -129,9 +128,7 @@ df_utvida = uncount(df, antall)</code></pre>
 <pre><code>## [1] 14434</code></pre>
 <pre><code>## [1] 644</code></pre>
 <p>Av de 3 211 ordene i AFINN-ordboka, er 644 ord i bruk i partiprogrammene. Sagt på en anna måte - av de 14 434 ordene i programmene, er det 644 ord som finnes igjen i AFINN. Gir de koda ordene et representativt utvalg? Tja, vanskelig å si - mange av ordene som ofte brukes kan antas å være ganske nøytrale. Men det kan også være at politisk sjargong er mer spesialisert, og har andre positive og negative ord enn det generelle språket. Det kan også være at det er har andre nyanser?</p>
-</div>
-<div id="hva-er-de-mest-stemningsladde-ordene-i-partiprogrammene" class="section level2">
-<h2>Hva er de mest stemningsladde ordene i partiprogrammene?</h2>
+<p>##Hva er de mest stemningsladde ordene i partiprogrammene?</p>
 <pre class="r"><code>temp = count(df, tekst, sort = TRUE, wt = antall) %&gt;%
   left_join(., sentiment) %&gt;% #hekter også på ordene igjen
   top_n(., 10, n)</code></pre>
@@ -199,23 +196,21 @@ df_utvida = uncount(df, antall)</code></pre>
 </tbody>
 </table>
 <p>De ti mest brukte ordene er positive. De mest brukte positive ordene er “sikre”, “bedre” og “styrke”, alle med en verdi på +2, mens god er koda som +3 (vurderinga som ligger bak at god er sterkere positivt enn bedre skal jeg ikke gå inn i).</p>
-</div>
-<div id="hva-er-den-gjennomsnittlige-stemninga-i-partiprogrammene" class="section level2">
-<h2>Hva er den gjennomsnittlige stemninga i partiprogrammene?</h2>
-<p>Hvis vi så beregner gjennomsnittlig stemning i de ulike partienes programmer, og plotter denne, får vi den følgende figuren:</p>
-<p><img src="/post/2019-09-04-tema-analyse_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>##Hva er den gjennomsnittlige stemninga i partiprogrammene?
+Hvis vi så beregner gjennomsnittlig stemning i de ulike partienes programmer, og plotter denne, får vi den følgende figuren:</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <p>Høyre er det gjennomsnittlig mest positive partiet, med +1,3 stemning. Forskjellen ned til KrF og SP er bitteliten. Rødt er det mest negative, på +0,6, men også de er positivt innstilt - sammen med SV (+0,8) og FrP (+0,9).</p>
 <p>Spennet fra Høyre ned til Rødt er på 0,7 stemning, altså under en hel stemningsverdi på kodeskalaen. Det er ikke mye - og med disse gjennomsnittene forsvinner mye av variasjonen. Hvordan ser spredninga ut for de enkelte partiene?</p>
 <pre class="r"><code>#skal telle opp antall ord assosisert med hver enkelt følelses-verdi
 temp = group_by(df_utvida, parti, verdi) %&gt;%
   summarise(., antall = n()) %&gt;%
-  mutate(., andel = antall / sum(antall))
-
-ggplot(data = temp) +
+  mutate(., andel = antall / sum(antall))</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;parti&#39;. You can override using the `.groups` argument.</code></pre>
+<pre class="r"><code>ggplot(data = temp) +
   geom_col(aes(x = verdi, y = andel)) +
   facet_wrap(~parti) +
   scale_x_continuous(breaks = seq(from = -5, to = 5, by = 1))</code></pre>
-<p><img src="/post/2019-09-04-tema-analyse_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 <p>Alle partiene bruker positive ord +2 mest, fulgt av +1. Rødt, SV og FrP ser ut til å ha noe større andel negative ord i sine program. Det ser vi også i boksplottet under, hvor medianen for disse tre partiene ligger på ord med +1, mens den for de øvrige partiene ligger på +2. De negative følelsene er for uteliggere å regne (dvs. mer enn 1,5 ganger avstanden mellom første og tredje kvartil). De negative følelsene er innafor denne avstanden for Rødt, SV og FrP.</p>
 <p>Dette gir mening - Rødt, SV og FrP er typisk mer kritisk til det bestående, og ønsker da kanskje relativt sett større endringer i Oslo enn andre partier. Det gir bittelitt mindre mening i et lokalvalg i Oslo, hvor Rødt og SV jo har utgjort en del av det bestående de siste fire årene. Men det samme kunne man jo sagt om FrP, som sitter i Regjering på sjette året. En anna vinkling på dette er at det er større variasjon i følelsene i FrP, SV og Rødt.</p>
 <pre class="r"><code>ggplot(data = df_utvida, aes(x = fct_reorder(parti, verdi, .fun = mean), y = verdi)) + 
@@ -224,5 +219,4 @@ ggplot(data = temp) +
   coord_flip() + 
   scale_y_continuous(breaks = seq(from = -5, to = 5, by = 1)) + 
   labs(x = &quot;Parti&quot;, y = &quot;Stemning&quot;)</code></pre>
-<p><img src="/post/2019-09-04-tema-analyse_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
-</div>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>

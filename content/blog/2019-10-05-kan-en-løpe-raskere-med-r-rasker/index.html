@@ -10,6 +10,7 @@ tags:
   - R
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>En kikk på treningsdata fra de siste årenes pusting og pesing rundt med overvåkningsdingser festa til kroppen</em></p>
@@ -29,18 +30,18 @@ tags:
 </ul>
 <p>Jeg tok ut en dump per 22. september 2019. I utgangspunktet er - eller føles - mye av disse dataene nokså personsensitive. Her er både posisjonsdata, pulsfrekvenser og notater om hva jeg tenkt på etter treningsøkta. Med 292 oppføringer er også mengden temmelig overveldende. Jeg begynner derfor med et utvalg av de oppsummerende dataene - med 10 variabler</p>
 <pre class="r"><code>glimpse(df)</code></pre>
-<pre><code>## Observations: 292
-## Variables: 10
-## $ start_time      &lt;dbl&gt; 1526840757000, 1540752043000, 1542223614000, 1...
-## $ end_time        &lt;dbl&gt; 1526842946000, 1540754401000, 1542225937000, 1...
-## $ duration        &lt;int&gt; 2187889, 2356854, 2323585, 2165512, 4937730, 6...
-## $ pause_duration  &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 832500,...
-## $ distance        &lt;int&gt; 6596, 7094, 7187, 6456, 13608, 19025, 7212, 99...
-## $ average_speed   &lt;dbl&gt; 10.853202, 10.835800, 11.135000, 10.732612, 9....
-## $ max_speed       &lt;dbl&gt; 13.39172, 15.59690, 14.89338, 15.88270, 13.454...
-## $ duration_per_km &lt;int&gt; 331699, 332232, 323303, 335426, 362855, 363125...
-## $ pulse_avg       &lt;int&gt; 144, 0, 0, 153, 148, 154, 157, 161, 162, 0, 13...
-## $ pulse_max       &lt;int&gt; 159, 0, 0, 182, 170, 175, 180, 181, 183, 0, 15...</code></pre>
+<pre><code>## Rows: 292
+## Columns: 10
+## $ start_time      &lt;dbl&gt; 1526840757000, 1540752043000, 1542223614000, 152364431~
+## $ end_time        &lt;dbl&gt; 1526842946000, 1540754401000, 1542225937000, 152364648~
+## $ duration        &lt;int&gt; 2187889, 2356854, 2323585, 2165512, 4937730, 6908450, ~
+## $ pause_duration  &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 832500, 0, 0, 0~
+## $ distance        &lt;int&gt; 6596, 7094, 7187, 6456, 13608, 19025, 7212, 9902, 1052~
+## $ average_speed   &lt;dbl&gt; 10.853202, 10.835800, 11.135000, 10.732612, 9.921977, ~
+## $ max_speed       &lt;dbl&gt; 13.39172, 15.59690, 14.89338, 15.88270, 13.45425, 12.2~
+## $ duration_per_km &lt;int&gt; 331699, 332232, 323303, 335426, 362855, 363125, 339323~
+## $ pulse_avg       &lt;int&gt; 144, 0, 0, 153, 148, 154, 157, 161, 162, 0, 136, 145, ~
+## $ pulse_max       &lt;int&gt; 159, 0, 0, 182, 170, 175, 180, 181, 183, 0, 158, 167, ~</code></pre>
 <p>Første utfordring er å finne ut hva tida og alt det andre her måles i. Etter litt roting oppdaget jeg at dette er lagret som antall tusendeler (millisekund?) siden 1. januar 1970. Distanses måles i meter.</p>
 <p>En ekstra spennende øvelse her er jo at vi får sett nærmere på tid og datoer i R - en øvelse i seg selv. lubridate-pakken ser ut til å smøre arbeidet litt i et tidyverse-rammeverk, heldigvis:</p>
 <ul>
@@ -67,14 +68,14 @@ tags:
 <pre class="r"><code>ggplot(data = df) + 
   geom_bar(aes(x = year)) + 
   labs(x = &quot;År&quot;, y = &quot;Antall&quot;, title = &quot;Flest aktiviteter i 2018&quot;, subtitle = &quot;Men 2019 er enda ikke over!&quot;)</code></pre>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>For å få en bedre forståelse av hva som ligger bak dette, er det greit å se på hvordan antallet aktiviteter varierer med tiden innafor et år: Er det sesongvariasjoner eller stabilitet i det som er registrert? Og kan jeg huske spesifikke hendelser som forklarer fall eller økning i aktivitet?</p>
 <pre class="r"><code>ggplot(data = temp) + 
   geom_line(aes(x = as.integer(month), y = antall, colour = as.factor(year))) +
   scale_x_continuous(limits = c(1, 12), breaks = 1:12, minor_breaks = NULL) + 
   scale_y_continuous(limits = c(0, 12), breaks = seq(from = 1, to = 12, by = 3), minor_breaks = NULL) + 
   labs(x = &quot;Måned&quot;, y = &quot;Antall&quot;, colour = &quot;År&quot;, title = &quot;Løpshistorikk - et sammensurium&quot;, subtitle = &quot;Diverse ting skjer - og da blir det mindre løping&quot;)</code></pre>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <ul>
 <li>I 2015 begynner registreringa utpå høsten.</li>
 <li>Jevn fart inn i 2016, med fortsatt 2-3 økter i måneden fram til juni, hvor det faller - og faller - og faller utover høsten og flater ut på en tur i måneden mot slutten av året. Det er det en åpenbar grunn til!</li>
@@ -85,22 +86,22 @@ tags:
 <p>Litt overraskende for meg her er at det ikke er noen særlig tydelig sesongvariasjon. I stedet er det diverse livshendelser som plasserer treninga i baksetet.</p>
 <p>##Hvor langt har jeg løpt?
 Over disse øktene har jeg totalt løpt 2484 kilometer. Det er langt - litt lengre enn fra Oslo til Roma. Medianløpet er på 7,5 kilometer, det lengste løpet på 42,2 km (maraton!) - men 50 % av løpene er på mellom 6,5 kilometer og 10,2 kilometer. Histogrammet viser at det er langt flest løp på ca. 7 kilometer, fulgt av 10 og 6 kilometer. Dette er ikke spesielt ulikt for de ulike årene. I 2018 klarte jeg å løpe noe flere lengre løp, slik at medianen lå nærmere 10 kilometer.</p>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-7-1.png" width="672" /><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-7-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-2.png" width="672" /></p>
 <p>##Hvor fort har jeg løpt?</p>
 <p>Det raskeste jeg har løpt er 3 min 20 sek på kilometeren. Medianhastigheten er 6 min per kilometer. For det meste har jeg løpt (i gjennomsnitt) på mellom 5 minutt og 30 sekund og 6 minutt og 30 sekund per kilometer. Fordelinga er ganske pen og symmetrisk. De konsistent raskeste tidene kom i 2018, hvor jeg også trente mer spesifikt mot å løpe raskere på ti-kilometer. 2019 har vært litt treigere, men ikke egentlig fullt så varierende som 2015-2017. Riktignok har vi ikke kommet helt inn i vintersesongen enda, noe som nok godt kan ha noe med dette å gjøre.</p>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-8-1.png" width="672" /><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
 <p>##Hva med pulsen da?
 For en god del av turene mangler puls-data: For 92 av turene er gjennomsnittspulsen satt til 0, og for 76 er den manglende. Hovedforklaringa på manglende pulsdata er dermed Runtastic-bruken - jeg brukte Runkeeper og Polar-system før dette, og trodde jeg hadde fått importert over dataene. Men tydeligvis ikke. Det er heller ikke slik at dette dekker alle turene i denne perioden. I noen tilfeller har jeg i lite motiverte perioder løpt uten pulsutstyr. Men også alle løp jeg har deltatt i, har jeg etterregistrert i appen - og noen ganger har pulsutstyret feila eller gått tom for batteri. Og det er svinvanskelig å bytte batteri på polar-utstyret uten å ødelegge noe.</p>
 <p>Det gir oss 124 turer med pulsdata. Hvordan ser disse ut? Median-pulsen ligger på 152, 50 % av turene ligger mellom 148 og 156, og maks gjennomsnittlig puls er på 181. 2019-dataene har mer variasjon i pulsen. Hva vil dette si, siden puls er relativt til makspuls og hvilepuls? At det meste av treningen har foregått i pulssone 2, for fetbrenning, men også noe i aerob sone.</p>
 <p>Makspulsen er derimot på 176 i snitt, og ligger i 50 % av tilfellene mellom 170 og 180. Den høyest målte pulsen er 199. Det vil si at jeg i de fleste løpene har vært oppe i pulssone 4, anaerob sone.</p>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-9-1.png" width="672" /><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-9-2.png" width="672" /><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-9-3.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-2.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-3.png" width="672" /></p>
 <p>##Hvor mye trening har jeg fått i meg?
 I følge <a href="https://www.helsedirektoratet.no/faglige-rad/fysisk-aktivitet-for-barn-unge-voksne-eldre-og-gravide/fysisk-aktivitet-for-voksne-og-eldre#voksne-og-eldre-bor-vaere-fysisk-aktive-i-minst-150-minutter-med-moderat-intensitet-eller-75-minutter-med-hoy-intensitet-per-uke">Helsedirektoratet</a> bør voksne være i fysisk aktivitet i 150 minutter moderat intensitet i uka, eller 75 minutter med høy intensitet. Høy intensitet tilsvarer løping.</p>
 <pre class="r"><code>temp = group_by(df, year, week) %&gt;%
   summarise(antall_minutter = sum(duration_min, na.rm = TRUE)) %&gt;%
-  ungroup()
-
-temp = left_join(expand(temp, year, week = 1:52), temp) %&gt;%
+  ungroup()</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;year&#39;. You can override using the `.groups` argument.</code></pre>
+<pre class="r"><code>temp = left_join(expand(temp, year, week = 1:52), temp) %&gt;%
   mutate(yearweek = ifelse(nchar(week) == 1, paste0(0, week), week),
          yearweek = paste0(year, yearweek),
          id = seq_along(yearweek),
@@ -109,11 +110,11 @@ temp = left_join(expand(temp, year, week = 1:52), temp) %&gt;%
 <pre><code>## Joining, by = c(&quot;year&quot;, &quot;week&quot;)</code></pre>
 <pre class="r"><code>qplot(data = df, x = duration_min, binwidth = 5) + 
   labs(x = &quot;Varighet i minutter&quot;, y = &quot;Antall&quot;, title = &quot;50 % av turene ligger mellom 40 og 60 minutter&quot;)</code></pre>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 <pre class="r"><code>ggplot(data = temp) + 
   geom_bar(aes(x = treningsdose)) + 
   labs(x = &quot;Trening i over eller under 75 minutter i uka?&quot;, y = &quot;Antall&quot;, title = &quot;To av tre uker med trening er over Helsedirektoratets anbefaling&quot;, subtitle = &quot;Men de fleste mangler data&quot;)</code></pre>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-10-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-2.png" width="672" /></p>
 <pre class="r"><code>ggplot(data = temp, aes(x = id, y = antall_minutter)) + 
   geom_point(aes(colour = treningsdose)) + 
   geom_smooth() +
@@ -122,15 +123,18 @@ temp = left_join(expand(temp, year, week = 1:52), temp) %&gt;%
 <pre><code>## `geom_smooth()` using method = &#39;loess&#39; and formula &#39;y ~ x&#39;</code></pre>
 <pre><code>## Warning: Removed 115 rows containing non-finite values (stat_smooth).</code></pre>
 <pre><code>## Warning: Removed 115 rows containing missing values (geom_point).</code></pre>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-10-3.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-3.png" width="672" /></p>
 <p>Figurene viser altså at av de ukene hvor jeg har trent, så har to av tre vært over Helsedirektoratets anbefaling for høyere intensitet. Trendlinja ligger solid over den anbefalte mengden, men dypper seg faretruende nær undersida i det siste. Og for mange uker har jeg ikke trent, og da bør jeg ha dekka inn aktivitetskravet på anna vis, med 150 minutter moderat aktivitet i uka i stedet (altså 25 minutters gange hver dag).</p>
 <p>#Hvor ofte har jeg klart målet om tre ganger i uka?
 Jeg liker egentlig å tro at jeg trener ca. 3 ganger i uka. Hvor ofte har det vært tilfelle her? Ikke veldig ofte - men mer enn ingenting:</p>
+<pre><code>## `summarise()` has grouped output by &#39;year&#39;. You can override using the `.groups` argument.</code></pre>
 <pre><code>## Joining, by = c(&quot;year&quot;, &quot;week&quot;)</code></pre>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-11-1.png" width="672" /><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-11-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre><code>## `summarise()` has grouped output by &#39;year&#39;. You can override using the `.groups` argument.</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-2.png" width="672" /></p>
 <p>#Er løpsdeltakelse noe jeg trener mot?
 eller noe jeg blir motivert til å trene av? Eller begge deler?</p>
 <pre class="r"><code>ggplot(data = temp) + 
   geom_point(aes(x = dato, y = distanse_km, colour = treningsform))</code></pre>
-<p><img src="/post/2019-10-05-kan-en-løpe-raskere-med-r-rasker_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
 <p>Det er vanskelig å si. Løpene er mer lagt til vår og høst, enn at de i seg selv påvirker treningsinnsatsen betydelig.</p>

@@ -42,7 +42,7 @@ Dataene har jeg lasta ned fra strømleverandør. Det mest fornuftige formatet va
 
 ```{r, include = FALSE}
 #leser inn data
-files= list.files(path = here("content/data/power/consumption"), pattern = "*.csv", full.names = TRUE) 
+files= list.files(path = "consumption", pattern = "*.csv", full.names = TRUE) 
 df = map_df(files, read_delim, delim = ";", escape_double = FALSE,
   skip = 1,
   col_names = c("fra", "til", "forbruk"),

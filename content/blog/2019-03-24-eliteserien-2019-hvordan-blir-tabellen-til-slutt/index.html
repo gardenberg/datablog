@@ -10,12 +10,27 @@ tags:
   - R
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p>Hvert år arrangerer noen på kontoret en Eliteserie-tippeligakonkurranse. Jeg veit lite om fotball-lagene, og har aldri tippet noe særlig - men pleier å gjøre det greit, basert på andres harde arbeid: eksperter og odds.</p>
 <p>Her bruker jeg tidyverse, knitr og here-pakka, og en egenprodusert tabell over ulike tips til tabellplasseringer. Her har jeg også lagt på et superenkelt gjennomsnitt av lagene, for å ha noe å sortere dem etter.</p>
-<pre><code>## here() starts at C:/Users/Kauna/Documents/R/test_blogdown</code></pre>
+<pre><code>## here() starts at C:/Users/Kauna/OneDrive/Documents/R/datablog</code></pre>
+<pre><code>## Note: Using an external vector in selections is ambiguous.
+## i Use `all_of(numeric_vars)` instead of `numeric_vars` to silence this message.
+## i See &lt;https://tidyselect.r-lib.org/reference/faq-external-vector.html&gt;.
+## This message is displayed once per session.</code></pre>
 <table>
+<colgroup>
+<col width="17%" />
+<col width="11%" />
+<col width="12%" />
+<col width="11%" />
+<col width="10%" />
+<col width="12%" />
+<col width="9%" />
+<col width="13%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="left">Lag</th>
@@ -24,6 +39,7 @@ tags:
 <th align="right">Dagsavisen</th>
 <th align="right">Dagbladet</th>
 <th align="right">Aftenposten</th>
+<th align="right">Resultat</th>
 <th align="right">gjennomsnitt</th>
 </tr>
 </thead>
@@ -35,6 +51,7 @@ tags:
 <td align="right">1</td>
 <td align="right">1</td>
 <td align="right">1.2</td>
+<td align="right">1</td>
 <td align="right">1.44</td>
 </tr>
 <tr class="even">
@@ -44,6 +61,7 @@ tags:
 <td align="right">2</td>
 <td align="right">3</td>
 <td align="right">1.8</td>
+<td align="right">3</td>
 <td align="right">1.76</td>
 </tr>
 <tr class="odd">
@@ -53,6 +71,7 @@ tags:
 <td align="right">5</td>
 <td align="right">2</td>
 <td align="right">3.2</td>
+<td align="right">9</td>
 <td align="right">3.24</td>
 </tr>
 <tr class="even">
@@ -62,6 +81,7 @@ tags:
 <td align="right">3</td>
 <td align="right">5</td>
 <td align="right">6.2</td>
+<td align="right">12</td>
 <td align="right">4.44</td>
 </tr>
 <tr class="odd">
@@ -71,6 +91,7 @@ tags:
 <td align="right">4</td>
 <td align="right">4</td>
 <td align="right">8.0</td>
+<td align="right">10</td>
 <td align="right">5.20</td>
 </tr>
 <tr class="even">
@@ -80,6 +101,7 @@ tags:
 <td align="right">7</td>
 <td align="right">9</td>
 <td align="right">8.0</td>
+<td align="right">6</td>
 <td align="right">7.80</td>
 </tr>
 <tr class="odd">
@@ -89,6 +111,7 @@ tags:
 <td align="right">10</td>
 <td align="right">8</td>
 <td align="right">8.0</td>
+<td align="right">7</td>
 <td align="right">8.00</td>
 </tr>
 <tr class="even">
@@ -98,6 +121,7 @@ tags:
 <td align="right">9</td>
 <td align="right">6</td>
 <td align="right">8.0</td>
+<td align="right">4</td>
 <td align="right">8.20</td>
 </tr>
 <tr class="odd">
@@ -107,6 +131,7 @@ tags:
 <td align="right">6</td>
 <td align="right">7</td>
 <td align="right">8.0</td>
+<td align="right">14</td>
 <td align="right">8.40</td>
 </tr>
 <tr class="even">
@@ -116,6 +141,7 @@ tags:
 <td align="right">15</td>
 <td align="right">12</td>
 <td align="right">9.4</td>
+<td align="right">11</td>
 <td align="right">10.28</td>
 </tr>
 <tr class="odd">
@@ -125,6 +151,7 @@ tags:
 <td align="right">8</td>
 <td align="right">10</td>
 <td align="right">8.0</td>
+<td align="right">2</td>
 <td align="right">10.60</td>
 </tr>
 <tr class="even">
@@ -134,6 +161,7 @@ tags:
 <td align="right">13</td>
 <td align="right">15</td>
 <td align="right">9.4</td>
+<td align="right">15</td>
 <td align="right">11.28</td>
 </tr>
 <tr class="odd">
@@ -143,6 +171,7 @@ tags:
 <td align="right">11</td>
 <td align="right">14</td>
 <td align="right">11.8</td>
+<td align="right">8</td>
 <td align="right">12.76</td>
 </tr>
 <tr class="even">
@@ -152,6 +181,7 @@ tags:
 <td align="right">16</td>
 <td align="right">11</td>
 <td align="right">11.4</td>
+<td align="right">16</td>
 <td align="right">13.08</td>
 </tr>
 <tr class="odd">
@@ -161,6 +191,7 @@ tags:
 <td align="right">12</td>
 <td align="right">16</td>
 <td align="right">14.4</td>
+<td align="right">5</td>
 <td align="right">13.88</td>
 </tr>
 <tr class="even">
@@ -170,11 +201,19 @@ tags:
 <td align="right">14</td>
 <td align="right">13</td>
 <td align="right">13.6</td>
+<td align="right">13</td>
 <td align="right">14.52</td>
 </tr>
 </tbody>
 </table>
-<p>Kilder: <a href="https://www.nordicbet.com/no/odds#?cat=&amp;reg=&amp;sc=6054">NordicBet</a> - <a href="https://www.nettavisen.no/sportspill/her-er-nettavisens-tabelltips-for-eliteserien-2019/3423620404.html">Nettavisen</a> - <a href="https://www.tk.no/sporten/fotball/eliteserien/plasserer-kbk-midt-pa-2019-tabellen/s/5-51-608359">Tidens Krav</a> - <a href="https://www.oddschecker.com/football/norway/eliteserien/norwegian-eliteserien/winner">Oddschecker</a> - <a href="https://www.dagsavisen.no/sport/slik-ender-eliteserien-kanskje-1.1457870">Dagsavisen</a> - <a href="https://www.dagbladet.no/sport/dagbladets-tabelltips-slik-ender-eliteserien/70922152">Dagbladet</a> - <a href="https://www.aftenposten.no/100Sport/fotball/Bare-n-av-fem-eksperter-tror-pa-RBK-gull---I-dag-er-de-ikke-i-narheten-av-topp-tre-271547b.html">Aftenposten</a>.</p>
+<p>Kilder:
+<a href="https://www.nordicbet.com/no/odds#?cat=&amp;reg=&amp;sc=6054">NordicBet</a>
+- <a href="https://www.nettavisen.no/sportspill/her-er-nettavisens-tabelltips-for-eliteserien-2019/3423620404.html">Nettavisen</a>
+- <a href="https://www.tk.no/sporten/fotball/eliteserien/plasserer-kbk-midt-pa-2019-tabellen/s/5-51-608359">Tidens Krav</a>
+- <a href="https://www.oddschecker.com/football/norway/eliteserien/norwegian-eliteserien/winner">Oddschecker</a>
+- <a href="https://www.dagsavisen.no/sport/slik-ender-eliteserien-kanskje-1.1457870">Dagsavisen</a>
+- <a href="https://www.dagbladet.no/sport/dagbladets-tabelltips-slik-ender-eliteserien/70922152">Dagbladet</a>
+- <a href="https://www.aftenposten.no/100Sport/fotball/Bare-n-av-fem-eksperter-tror-pa-RBK-gull---I-dag-er-de-ikke-i-narheten-av-topp-tre-271547b.html">Aftenposten</a>.</p>
 <p>Aftenposten-plasseringa er litt annerledes enn de øvrige, ettersom de har spurt fem eksperter om topp tre og bunn tre. Jeg har bare tatt gjennomsnittene av dette.</p>
 <p>I en ideell verden skulle jeg også gjerne hatt med lagenes budsjetter. Det har jeg imidlertid ikke klart å skrape sammen, så det får være en god ide til seinere.</p>
 <p>En måte å vise plasseringene på, er med en fargelagt tabell. Her ser vi enklere enn med de rene tallene at det er nokenlunde stor enighet om de øverste fire-fem lagene, og de fire-fem nederste. Hvilke lag som blir plassert hvor blant de seks i midten varierer imidlertid mer.</p>
@@ -185,7 +224,7 @@ ggplot(data = temp, aes(x=as.factor(kilde), y = fct_reorder(as.factor(Lag), plas
   geom_tile(aes(fill = plassering))+
   labs(x = &quot;Kilde&quot;, y = &quot;Lag&quot;, title = &quot;Molde og Rosenborg i topp, Mjøndalen og Viking i bunn&quot;)+
   scale_fill_gradient2(low = &quot;steelblue&quot;, mid = &quot;grey&quot;, high = &quot;orange&quot;, midpoint = 8)</code></pre>
-<p><img src="/post/2019-03-24-eliteserien-2019-hvordan-blir-tabellen-til-slutt_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <p>Her har jeg altså 16 lag med fem tips per lag. Varmekartet gir et raskt overblikk, menen ganske diffus oversikt over de faktiske spredningene for de enkelte lagene.</p>
 <pre class="r"><code>ggplot(data = filter(temp, kilde != &quot;gjennomsnitt&quot;), aes(x = fct_reorder(as.factor(Lag), plassering, .fun = mean, .desc = TRUE), y = plassering)) + 
   #her bruker vi et boksplot for å vise variasjonen i plasseringer for hvert enkelt lag, men gjør det gjennomsiktig
@@ -194,7 +233,7 @@ ggplot(data = temp, aes(x=as.factor(kilde), y = fct_reorder(as.factor(Lag), plas
   geom_jitter(color=&quot;steelblue&quot;,alpha=0.3) +
   labs(x = &quot;Lag&quot;, y = &quot;Plassering&quot;, title = &quot;Stor variasjon i tips for lag midt på tabellen&quot;, subtitle = &quot;Større enighet om topp og bunn&quot;) + 
   coord_flip()</code></pre>
-<p><img src="/post/2019-03-24-eliteserien-2019-hvordan-blir-tabellen-til-slutt_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Her ser vi tydeligere at konsensusen er størst om de øverste lagene. De lavere lagene på den nedre halvdelen av tabellen har større spredning i tabellposisjoner. Det ser en av spredningen på punktene, og størrelsen på boksene. Særlig Strømsgodset splitter folk.</p>
 <p>Boksplottene viser medianen som midtpunkt. Her får en fram at Ranheim havner på kvalifiseringsplass om en legger gjennomsnitt til grunn, fordi en av ekspertene har svært lave forventninger til laget. Medianen legger dem imidlertid på fjerde siste plass, og lar Stabøk gå ned i stedet. Er det mer fornuftig å la ekstre stemmer telle likt, eller skal en heller legge vekt på konsensuspunktet?</p>
 <p>…</p>

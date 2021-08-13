@@ -9,6 +9,7 @@ categories:
 tags: []
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>Noen tanker om hvorfor treningsdata kan være interessant å se på, og så en kikk på noen nøkkeltall for 2019</em></p>
@@ -44,19 +45,19 @@ tags: []
 <pre class="r"><code>ggplot(data = df) + 
   geom_bar(aes(x = as.factor(year))) + 
   labs(x = &quot;År&quot;, y = &quot;Antall løpeturer&quot;, title = &quot;I 2019 løp jeg 82 turer&quot;, subtitle = &quot;Nesten like mange som i 2018&quot;)</code></pre>
-<p><img src="/post/2020-01-03-ble-2019-et-bra-løpeår_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 </div>
 <div id="antall-kilometer-løpt" class="section level2">
 <h2>Antall kilometer løpt</h2>
 <pre class="r"><code>ggplot(data = df) + 
   geom_bar(aes(x = as.factor(year), weight = distance)) + 
   labs(x = &quot;År&quot;, y = &quot;Hvor langt jeg løp&quot;, title = &quot;I 2019 løp jeg ca. 700 kilometer&quot;, subtitle = &quot;100 kilometer mindre enn 2018, men langt mer enn tidligere år&quot;)</code></pre>
-<p><img src="/post/2020-01-03-ble-2019-et-bra-løpeår_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <pre class="r"><code>ggplot(data = df, aes(x = as.factor(year), y = distance)) + 
   geom_boxplot() + 
   geom_jitter(colour = &quot;steelblue&quot;, alpha = 0.2) + 
   labs(x = &quot;År&quot;, y = &quot;Hvor langt jeg løp&quot;, title = &quot;Medianturen i 2019 var kortere enn i 2019&quot;, subtitle = &quot;2019 lignet mer på 2017 i lengden på løpeturer&quot;)</code></pre>
-<p><img src="/post/2020-01-03-ble-2019-et-bra-løpeår_files/figure-html/unnamed-chunk-3-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-2.png" width="672" /></p>
 </div>
 <div id="kvalitet-uker-med-mer-enn-75-minutter-løping" class="section level2">
 <h2>Kvalitet: Uker med mer enn 75 minutter løping</h2>
@@ -64,9 +65,9 @@ tags: []
 <p>Ved opptelling ser jeg at mange av ukene med trening, har mer enn 75 minutter med trening i seg. Men de langt fleste ukene er imidlertid uten noen registrert trening.</p>
 <pre class="r"><code>temp = group_by(df, year, week) %&gt;%
   summarise(antall_minutter = sum(duration_min, na.rm = TRUE)) %&gt;%
-  ungroup()
-
-temp = left_join(expand(temp, year, week = 1:52), temp) %&gt;%
+  ungroup()</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;year&#39;. You can override using the `.groups` argument.</code></pre>
+<pre class="r"><code>temp = left_join(expand(temp, year, week = 1:52), temp) %&gt;%
   mutate(yearweek = ifelse(nchar(week) == 1, paste0(0, week), week),
          yearweek = paste0(year, yearweek),
          id = seq_along(yearweek),
@@ -79,7 +80,7 @@ ggplot(data = temp) +
   geom_bar(aes(x = treningsdose)) + 
   facet_wrap(~year) + 
   labs(x = &quot;Trening i over eller under 75 minutter i uka?&quot;, y = &quot;Antall&quot;, title = &quot;Tre av fem uker  er over Helsedirektoratets anbefaling&quot;)</code></pre>
-<p><img src="/post/2020-01-03-ble-2019-et-bra-løpeår_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <pre class="r"><code>ggplot(data = temp, aes(x = id, y = antall_minutter)) + 
   geom_point(aes(colour = treningsdose)) + 
   geom_smooth() +
@@ -96,7 +97,7 @@ ggplot(data = temp) +
 <pre><code>## `geom_smooth()` using method = &#39;loess&#39; and formula &#39;y ~ x&#39;</code></pre>
 <pre><code>## Warning: Removed 105 rows containing non-finite values (stat_smooth).</code></pre>
 <pre><code>## Warning: Removed 105 rows containing missing values (geom_point).</code></pre>
-<p><img src="/post/2020-01-03-ble-2019-et-bra-løpeår_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
 </div>
 <div id="hva-tilsier-dette-at-jeg-skal-klare-å-få-til-i-2020" class="section level2">
 <h2>Hva tilsier dette at jeg skal klare å få til i 2020?</h2>

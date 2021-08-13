@@ -35,7 +35,7 @@ set.seed(1106)
 Også denne gangen bruker vi eksempeldata fra SSB. Ut ifra publiseringsoversikten ser jeg at det nylig er lagt ut kulturstatistikk, også dette fra KOSTRA. Besøk på folkebibliotek i landets kommuner fra 2015 til 2018 kan kanskje være interessant.
 
 ```{r}
-alle_data = ApiData("https://data.ssb.no/api/v0/no/table/12060",
+alle_data = ApiData("https://data.ssb.no/api/v0/no/table/13135",
              KOKkommuneregion0000 = TRUE,
              ContentsCode = "KOSbesokbiblinnb0000",
              Tid = TRUE

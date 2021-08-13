@@ -9,6 +9,7 @@ categories:
 tags: []
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p>Da var Eliteserien over for i år. Hvordan gikk det med <a href="https://suppe-og-analyse.netlify.com/post/eliteserien-2019-hvordan-blir-tabellen-til-slutt/">tippinga</a> fra mars? Da bestemte jeg for å legge gjennomsnittet av oddssidenes tipping og avisenes ekspertkommentarer til grunn.</p>
@@ -115,7 +116,7 @@ ggplot() +
   geom_point(data = filter(temp, type == &quot;Resultat&quot;), aes(x = prognose, y = Lag), colour = &quot;black&quot;) +
   geom_point(data = filter(temp, ID == &quot;Prognose&quot;), aes(x = prognose, y = Lag), colour = &quot;red&quot;) +
   labs(x = &quot;Plassering&quot;, y = &quot;Lag&quot;, colour = &quot;Prognose eller resultat?&quot;)</code></pre>
-<p><img src="/post/2019-12-14-resultater-av-eliteserien-2019-hvem-kom-nærmest_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Hvem er nærmest? Vi bruker RMSE som mål, den gir større straff til store feil:</p>
 <pre class="r"><code>#RMSE
 rmse &lt;- function(feil){

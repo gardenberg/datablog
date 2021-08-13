@@ -27,7 +27,7 @@ options(scipen = 100)
 #data
 
 #strømregninger
-df_bill <- read_delim(here("content/data/power/bills.csv"), ";", escape_double = FALSE, 
+df_bill <- read_delim("bills.csv", ";", escape_double = FALSE, 
                  locale = locale(decimal_mark = ",", grouping_mark = "|", encoding = "ISO-8859-1"),
                  col_types = cols(
                    periode_start = col_date(format = "%d.%m.%Y"), 
@@ -36,8 +36,9 @@ df_bill <- read_delim(here("content/data/power/bills.csv"), ";", escape_double =
                  trim_ws = TRUE)
 
 #strømpriser
-temp1 <- read_delim(here("content/data/power/nordpool_elspotprices_2019_hourly.csv"), ";", escape_double = FALSE, locale = locale(decimal_mark = ",",grouping_mark = "|", encoding = "ISO-8859-1"), trim_ws = TRUE)
-temp2 <- read_delim(here("content/data/power/nordpool_elspotprices_2020_hourly.csv"), ";", escape_double = FALSE, locale = locale(decimal_mark = ",",grouping_mark = "|", encoding = "ISO-8859-1"), trim_ws = TRUE)
+temp1 <- read_delim("nordpool_elspotprices_2019_hourly.csv", ";", escape_double = FALSE, locale = locale(decimal_mark = ",",grouping_mark = "|", encoding = "ISO-8859-1"), trim_ws = TRUE)
+
+temp2 <- read_delim("nordpool_elspotprices_2020_hourly.csv", ";", escape_double = FALSE, locale = locale(decimal_mark = ",",grouping_mark = "|", encoding = "ISO-8859-1"), trim_ws = TRUE)
 
 df_elpris = bind_rows(temp1, temp2) %>%
   separate(Hours, into = c("hour_start", NA), sep = 2) %>%
@@ -48,7 +49,7 @@ df_elpris = bind_rows(temp1, temp2) %>%
   select(periode_start, ore_kwh)
 
 #strømforbruk
-files= list.files(path = here("content/data/power/consumption"), pattern = "*.csv", full.names = TRUE) 
+files= list.files(path = "consumption", pattern = "*.csv", full.names = TRUE) 
 df_consumption = map_df(files, read_delim, delim = ";", escape_double = FALSE,
   skip = 1,
   col_names = c("fra", "til", "forbruk"),
@@ -222,7 +223,7 @@ ggplot(aes(x = fct_reorder(måned, periode_start), y = kostnad_andel, colour = p
 
 Den faste delen av nettleia ("fastledd") gikk opp fra 160 til 180 i fjor høst. Andelen av totalbeløpet faller rimelig nok med økte totalkostnader. Fastbeløpet til energiselskapet er mindre, og har ligget rundt 25 kroner i hele perioden. Men jeg hadde også en "trippelgaranti" på regninga mi, som var en unødvendig forsikringsordning. Det var også i praksis en fastkostnad, som fra oktober til mars kosta meg 50 kroner i måneden.
 
-Enerigleddet i nettleia er en god del høyere, og utgjør fra 30 % til over 50 % av hele regninga. Innkjøpsprisen til strømselskapet utgjorde den største delen til og med desember i fjor, men etter det har den falt under energileddet. Som vi ser av figuren har strømprisen falt en del, og utgjør en stadig lavere andel av totalregninga.
+Energileddet i nettleia er en god del høyere, og utgjør fra 30 % til over 50 % av hele regninga. Innkjøpsprisen til strømselskapet utgjorde den største delen til og med desember i fjor, men etter det har den falt under energileddet. Som vi ser av figuren har strømprisen falt en del, og utgjør en stadig lavere andel av totalregninga.
 
 ```{r}
 temp = filter(df_bill, produkt == "innkjøpspris") %>%

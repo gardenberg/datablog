@@ -9,6 +9,7 @@ categories:
 tags: []
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>Et forsøk på å skvise noe mer innsikt ut av treningsdataene med forløpsanalyse</em></p>
@@ -25,11 +26,17 @@ tags: []
          ) </code></pre>
 <pre><code>## Joining, by = &quot;dato&quot;</code></pre>
 <pre class="r"><code>#her må jeg også håndtere datoer som har to treningsøkter registrert.</code></pre>
-<p>#Dagers pause
-Så kan jeg kartlegge hvor mange dagers pause jeg har mellom treningsøkter. I samme slengen legger jeg på en identifikator, som identifiserer hver treningsøkt + dagene med restitusjon som tilhørene til en “økt”.</p>
+<div id="dagers-pause" class="section level1">
+<h1>Dagers pause</h1>
+<p>Så kan jeg kartlegge hvor mange dagers pause jeg har mellom treningsøkter. I samme slengen legger jeg på en identifikator, som identifiserer hver treningsøkt + dagene med restitusjon som tilhørende til en “økt”.</p>
 <pre class="r"><code>i = 1
 j = 0
 `økt` = 0 
+
+df_alle$dager_siden_trening = NULL
+df_alle$økt_id = NULL
+
+#faktisk
 for(i in 1:length(df_alle$dato)){
   if(df_alle$er_trening[[i]] == TRUE){
     j = 0
@@ -44,6 +51,15 @@ for(i in 1:length(df_alle$dato)){
   }
 }
 
+#av en eller anna grunn, jeg forstår ikke hvorfor, blir variablene som redigeres her
+#lister. Dette er jo noe nytt R har begynt med siden jeg først lagde denne
+#unlister dem ganske enkelt ???
+
+df_alle = mutate(df_alle,
+                 dager_siden_trening = unlist(dager_siden_trening),
+                 `økt_id` = unlist(`økt_id`)
+                 )
+
 temp1 = group_by(df_alle, `økt_id`) %&gt;%
   summarise(dager_restitusjon = max(dager_siden_trening))
 
@@ -53,7 +69,7 @@ temp2 = ungroup(temp1) %&gt;%
 
 ggplot(data = temp2) + 
   geom_col(aes(x = dager_restitusjon, y = antall))</code></pre>
-<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Langt de fleste resitusjonsperiodene er på 1-4 dager - nærmere 250 av de 292 treningsaktivitetene ble etterfulgt av ei slik pause. Men så dras snittet opp av de lengre periodene på ei uke, to uker og mer.</p>
 <p>Min teori er at det ikke er stort å hente her ved å se på dette som et forløp: alle pausene er avslutta med en ny treningsøkt, og sensurering av observasjoner er ikke et problem.</p>
 <p>Det er to grunnleggende biter informasjon jeg trenger for å se på dette i et forløps-oppsett: Tid til hendelse, og en indikator på hvilken hendelse som inntraff. Hendelsen er en ny treningsøkt. Tida er lengden på pausen mellom treningsøkter, i dager.</p>
@@ -80,7 +96,7 @@ ggplot(data = temp, aes(x = time, y = estimate))+
   geom_line() +
   geom_ribbon(aes(ymin=conf.low,ymax=conf.high),alpha=0.2) +
   labs(x = &quot;Dagers pause&quot;, y = &quot;Sannsynlighet for å fortsette treningspausa&quot;, title = &quot;Sannsynlighet for å fortsette treningspause, etter antall dager&quot;, subtitle = &quot;Kaplan-Meier-kurve&quot;)</code></pre>
-<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>Her ser vi det samme mønsteret som i grafen over: langt de fleste pausene er korte, og sannsynligheten for å fortsette ei pause faller ganske bratt de første fire dagene. Deretter flater den ut, og faller langt langsommere etter det.</p>
 <p>Jeg har ingen egentlig informasjon om pausen, utover lengden på den, og en dato som forteller noe om hvilken del av året pausen var i.</p>
 <p>#Treningsperioder
@@ -117,14 +133,15 @@ for(i in 2:length(df_alle$dato)){
     df_alle$periode[[i]] = periode
   }
 }
-  temp[a - (min(temp$pauselengde)-1),2] = max(df_alle$periode)
+ df_alle$periode = unlist(df_alle$periode)
+ temp[a - (min(temp$pauselengde)-1),2] = max(df_alle$periode)
 }
 
 
 ggplot(data = temp) + 
   geom_line(aes(x = pauselengde, y = antall_perioder)) + 
   labs(title = &quot;Antall treningsperioder&quot;, x = &quot;Dagers pause for ny periode&quot;, y = &quot;Antall perioder&quot;)</code></pre>
-<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>Hvis vi setter cut-off ved 4 dager, er jeg oppe i nærmere 70 distinkte treningsperioder. Antallet perioder avtar ganske bratt til rundt ca. 8 dagers pause, hvorfra det flater ut. Med 12 dagers pause er antallet treningsperioder 15, og 28 er det 6 perioder.</p>
 <p>Vi går for 12 dager, den korteste pausa forskninga over henviser til som betraktelig dårlig:</p>
 <pre class="r"><code>#settings for treningsloopen
@@ -164,7 +181,7 @@ df_survival = ungroup(df_alle) %&gt;%
   geom_point(aes(x = dag_periode, y = fct_reorder(as.factor(dato), dag_periode))) + 
   labs(x = &quot;Varighet på treningsperiode&quot;, y = &quot;periode_id&quot;, title = &quot;Lengde på periode&quot;) + 
   scale_x_continuous(limits = c(0, 300))</code></pre>
-<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <p>Så hvordan ser dette ut, når vi estimerer en kurve for sannsynligheten for treningsperiode-avbrudd?</p>
 <pre class="r"><code>#en kikk på Surv-objektet
 trening_survival = survfit(Surv(dag_periode, hendelse == TRUE)~1, data = df_survival)
@@ -179,5 +196,6 @@ ggplot(data = temp, aes(x = time, y = estimate))+
   geom_line() +
   geom_ribbon(aes(ymin=conf.low,ymax=conf.high),alpha=0.2) +
   labs(x = &quot;Dagers varighet på treningsperiode&quot;, y = &quot;Sannsynlighet for å fortsette trening&quot;, title = &quot;Sannsynlighet for å fortsette en treningsperiode, etter antall dager&quot;, subtitle = &quot;Kaplan-Meier-kurve&quot;)</code></pre>
-<p><img src="/post/2019-10-15-forløpsanalyse-på-treningsdata_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p>Siden vi bare har 15 observasjoner, hvorav 1 er sensurert, blir sannsynligheten temmelig usikkert estimert. Den starter på mellom 80 % og 100 % rundt to ukers tid, faller ganske krapt fram til rundt to måneder - men faller så mer slakt av. Betyr det at om jeg klarer å holde en treningsperiode oppe i rundt to måneder, så er det blitt en mer innarbeida vane? Kanskje. For å finne ut av det burde jeg også få brukt treningsinformasjonen til noe fornuftig - men det får bli seinere.</p>
+</div>

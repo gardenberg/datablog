@@ -21,7 +21,7 @@ library(knitr)
 suppressPackageStartupMessages(library(tidyverse))
 
 #data
-df = read.csv2(here("content/data/tippeliga_2019.csv"),stringsAsFactors = FALSE, na.strings = "", nrows = 16) %>%
+df = read.csv2("tippeliga_2019.csv",stringsAsFactors = FALSE, na.strings = "", nrows = 16) %>%
   select(., -UniBet, - NordicBet)
 
 numeric_vars = names(df)[2:6]

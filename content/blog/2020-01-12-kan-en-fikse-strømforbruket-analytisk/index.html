@@ -10,6 +10,7 @@ tags:
   - strømforbruk
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>Nylig flytta jeg inn i et større hus. Da vinteren slo inn, fikk jeg lett sjokk av ny strømregning. Er det mulig å analysere seg ut av dette?</em></p>
@@ -54,7 +55,7 @@ df = mutate(df,
 <p>Hva skjer om vi ganske enkelt plotter denne tidsserien, time for time? Dette:</p>
 <pre class="r"><code>ggplot(data = df, aes(x = fra, y = forbruk)) + 
     geom_line() </code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>Her er det mye variasjon, tilsynelatende mye av det om lag lik. Men det er også en svak trend til stigning i forbruk gjennom perioden - med unntak av slutten av året. Det er antakeligvis juleferien - og mye varme på når jeg kom hjem igjen.</p>
 <p>For å få litt bedre forståelse for de ulike typene variasjon, ser jeg nærmere på variasjon innafor enkeltdager og enkeltuker.</p>
 </div>
@@ -63,12 +64,12 @@ df = mutate(df,
 <pre class="r"><code>ggplot(data = df, aes(x = time, y = forbruk)) + 
     geom_smooth() </code></pre>
 <pre><code>## `geom_smooth()` using method = &#39;gam&#39; and formula &#39;y ~ s(x, bs = &quot;cs&quot;)&#39;</code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-5-1.png" width="672" />
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" />
 Det er helt klart et mønster i strømforbruket gjennom et døgn: det er høyest fra rundt kl. 16 til kl. 21. Men det er også en topp mellom 7 og 9, på morgenen.</p>
 <p>Mens trenden er tydelig, kan det også være greit å vite litt om variasjonen rundt denne trenden:</p>
 <pre class="r"><code>ggplot(data = df, aes(x = time, group = time, y = forbruk)) + 
     geom_boxplot()</code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <p>Her ser vi at også spredninga ser ut til å være større på de tidspunktene hvor forbruket er større.</p>
 </div>
 <div id="forskjeller-på-arbeidsdager-og-helgedager" class="section level2">
@@ -77,7 +78,7 @@ Det er helt klart et mønster i strømforbruket gjennom et døgn: det er høyest
 <pre class="r"><code>ggplot(data = df, aes(x = time, y = forbruk, colour = ukedag)) + 
     geom_smooth() </code></pre>
 <pre><code>## `geom_smooth()` using method = &#39;gam&#39; and formula &#39;y ~ s(x, bs = &quot;cs&quot;)&#39;</code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <p>Over ser vi altså at det er et skille mellom forbruket på arbeidsdager og i helger: i helgene er det jevnt over høyere, og har også en topp rundt kl. 10 om morgenen.</p>
 <p>Den er imidlertid ikke slik at det er et massivt høyere strømforbruk i helgene - det er noe større i gjennomsnitt, og noe større ekstremverdier, men ikke veldig forskjellig. Kanskje det er mer vaskemaskiner og dusjing i helgene?</p>
 <pre class="r"><code>temp = index_by(df, dato) %&gt;%
@@ -91,17 +92,17 @@ Det er helt klart et mønster i strømforbruket gjennom et døgn: det er høyest
 ggplot(data = temp, aes(x = ukedag, y = forbruk)) + 
   geom_boxplot() + 
   geom_jitter(alpha = 0.1)</code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <pre class="r"><code>ggplot(data = temp, aes(x = forbruk)) + 
   geom_density(aes(fill = ukedag), alpha = 0.3)</code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
 </div>
 <div id="strømforbruk-etter-dager---trend" class="section level2">
 <h2>Strømforbruk etter dager - trend</h2>
 <p>Så strømforbruket varierer innenfor en dag. Hvordan ser dette ut når vi summer opp forbruket for en enkelt dag, og ser på trenden fra juli til januar? Slik:</p>
 <pre class="r"><code>ggplot(data = temp) + 
   geom_line(aes(x = dato, y = forbruk)) </code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <p>Det er en trend til stigende forbruk over tid. Det ser også ut til å kunne være noe større variasjoner etter hvert som været blir kaldere.</p>
 </div>
 <div id="oppsummerte-observasjoner" class="section level2">
@@ -124,7 +125,7 @@ ggplot(data = temp, aes(x = ukedag, y = forbruk)) +
 components(dekomponert) %&gt;%
   autoplot() + 
   labs(x = &quot;tid&quot;)</code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 <p>Øverste figur viser forbruket over tid. Figuren på linje to viser den isolerte trenden, mens linje tre og fire viser sesong-mønstre innenfor en dag og ei uke. Nederste linje viser gjenstående variasjon.</p>
 <p>Den grå boksen på y-aksen til venstre trekker oppmerksomheten mot at y-aksene er ulike. Det er størst variasjon i restleddet og den opprinnelige serien, mens de tre komponentene har mindre variasjon innad i seg. Dette er nok et tegn på at det er et stort og uforklart restledd her, som ikke lar seg enkelt dekomponere til en trend eller relatert til konstant daglig eller ukentlig variasjon.</p>
 <p>Dette blir enda tydeligere hvis vi plotter en sesongjustert graf av forbruket - dette gir ikke et mye tydeligere bilde enn den ujusterte grafen.</p>
@@ -133,5 +134,5 @@ components(dekomponert) %&gt;%
   autolayer(components(dekomponert), season_adjust, color=&#39;blue&#39;) +
   xlab(&quot;Tid&quot;) + ylab(&quot;Forbruk&quot;) +
   ggtitle(&quot;Strømforbruk - sesongjustert&quot;)</code></pre>
-<p><img src="/post/2020-01-12-kan-en-fikse-strømforbruket-analytisk_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 </div>

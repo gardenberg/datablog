@@ -12,7 +12,7 @@ tags:
 
 IMDis [tall og statistikk-nettsider](https://www.imdi.no/tall-og-statistikk/) henter dataene sine om innvandring og integrering i kommuner, fylker og Norge fra et API.
 
-APIet er dessverre ikke dokumentert, men lar seg enkelt utforske ved hjelp av en nettleser-konsoll, f.eks. i Chrome. Her kommer et kort forsøk på litt forklaring. Datasettet bruker NLOD-lisensen.
+APIet er dessverre ikke dokumentert, men lar seg enkelt utforske ved hjelp av en nettleser-konsoll, f.eks. i Chrome. Her kommer et kort forsøk på litt forklaring. Datasettet bruker NLOD-lisensen. (Det gjorde i hvert fall det i 2019, men sjekk gjerne med IMDis nettsider om det har skjedd endringer).
 
 ## Innhold i datasettet
 Datasettet har informasjon om innvandrere og integrering på en rekke områder i norske kommuner, næringsregioner, fylker, hele landet og bydeler i Oslo, og er tilgjengelig med NLOD-lisens (se nederst for lisens-betingelser). Noe kommer fra IMDi, men mesteparten kommer fra Statistisk sentralbyrå (SSB).
@@ -33,7 +33,7 @@ library(here)
 library(ggplot2)
 
 #scripts
-source(here("content/scripts/imdi_api_function.R"))
+source("imdi_api_function.R")
 
 #theme for ggplot2
 theme_set(theme_minimal())
@@ -54,7 +54,7 @@ kable(df)
 
 ```
 
-APIet gir p.t. tilgang til 50 datasett
+APIet gir p.t. tilgang til 50 datasett.
 
 ### Metadata 2 - headere
 

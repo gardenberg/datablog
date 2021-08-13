@@ -9,12 +9,13 @@ categories:
 tags: []
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>En rask kikk på løpetider fra de siste årenes løp</em></p>
 <p>Løping er gøy!</p>
 <p>Utgangspunktet var at jeg satte meg ned og prøvde å finne ut av hvor mange løp jeg har vært med på de siste årene, og hvordan jeg tidsmessig ligger an. Jeg fant at jeg totalt hadde vært med på 19 løp:</p>
-<pre class="r"><code>runs = read_delim(here::here(&quot;content/data/runs_sept2019.csv&quot;), &quot;;&quot;, escape_double = FALSE, col_types = cols(dato = col_character()), locale = locale(decimal_mark = &quot;,&quot;, grouping_mark = &quot;|&quot;, encoding = &quot;ISO-8859-1&quot;), trim_ws = TRUE)
+<pre class="r"><code>runs = read_delim(&quot;runs_sept2019.csv&quot;, &quot;;&quot;, escape_double = FALSE, col_types = cols(dato = col_character()), locale = locale(decimal_mark = &quot;,&quot;, grouping_mark = &quot;|&quot;, encoding = &quot;ISO-8859-1&quot;), trim_ws = TRUE)
 
 runs = mutate(runs, 
               dato = as.Date(dato, format = &quot;%d.%m.%Y&quot;),
@@ -22,8 +23,8 @@ runs = mutate(runs,
               tid_test = hms(tid),
               tid_minutter = as.period(tid_test, unit = &quot;minutes&quot;)
               )</code></pre>
-<pre><code>## Warning in .parse_hms(..., order = &quot;HMS&quot;, quiet = quiet): Some strings
-## failed to parse, or all strings are NAs</code></pre>
+<pre><code>## Warning in .parse_hms(..., order = &quot;HMS&quot;, quiet = quiet): Some strings failed to
+## parse, or all strings are NAs</code></pre>
 <pre class="r"><code>knitr::kable(arrange(select(runs, dato, `løp`, distanse_km, tid), dato))</code></pre>
 <table>
 <thead>
@@ -156,19 +157,19 @@ runs = mutate(runs,
   geom_bar(aes(x = year)) + 
   scale_x_continuous(breaks = 2006:2019) + 
   labs(title = &quot;2 - 4 løp i året siden 2013&quot;, x = &quot;År&quot;, y = &quot;Antall&quot;)</code></pre>
-<p><img src="/post/2019-09-22-kan-en-løpe-raskere-med-r_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Av de 18 løpene er det 7 10-kilometere og 6 halvmaraton</p>
 <pre class="r"><code>ggplot(data = runs) + 
   geom_bar(aes(x = as.factor(distanse_km))) + 
   labs(title = &quot;Flest 10 km og halvmaraton&quot;, x = &quot;Løpslengde i km&quot;, y = &quot;Antall&quot;)</code></pre>
-<p><img src="/post/2019-09-22-kan-en-løpe-raskere-med-r_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>De lengre løpene bruker jeg rimelig nok lengre tid på.</p>
 <pre class="r"><code>ggplot(data = runs) + 
   geom_point(aes(x = dato, y = tid_minutter, colour = as.factor(distanse_km))) +
   scale_y_time() + 
   labs(title = &quot;Lengre tid på lengre løp&quot;)</code></pre>
 <pre><code>## Warning: Removed 1 rows containing missing values (geom_point).</code></pre>
-<p><img src="/post/2019-09-22-kan-en-løpe-raskere-med-r_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>Halvmaraton-tidene har blitt bedre, mens tikilometer-tidene er nokenlunde stabile. Ja, grafen spretter rundt en del, og det er en del som skiller tider rundt 44 min og 50 min, men ikke frykelig mye heller?</p>
 <p>For å få et bedre bilde av det, kan en framstilling av gjennomsnittlig hastighet være bedre egna:</p>
 <pre class="r"><code>ggplot(data = runs) + 
@@ -178,19 +179,19 @@ runs = mutate(runs,
   scale_y_time() + 
   labs(title = &quot;Raskere halvmaraton, stabile tikilometere?&quot;)</code></pre>
 <pre><code>## Warning: Removed 1 rows containing missing values (geom_point).</code></pre>
-<pre><code>## Warning: Removed 1 rows containing missing values (geom_path).</code></pre>
-<pre><code>## geom_path: Each group consists of only one observation. Do you need to
-## adjust the group aesthetic?
-## geom_path: Each group consists of only one observation. Do you need to
-## adjust the group aesthetic?
-## geom_path: Each group consists of only one observation. Do you need to
-## adjust the group aesthetic?</code></pre>
-<p><img src="/post/2019-09-22-kan-en-løpe-raskere-med-r_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre><code>## Warning: Removed 1 row(s) containing missing values (geom_path).</code></pre>
+<pre><code>## geom_path: Each group consists of only one observation. Do you need to adjust
+## the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to adjust
+## the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to adjust
+## the group aesthetic?</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <pre class="r"><code>ggplot(data = runs) + 
   geom_point(aes(x = dato, y = `min/km`, colour = as.factor(distanse_km))) +
   geom_line(aes(x = dato, y = `min/km`, colour = as.factor(distanse_km))) </code></pre>
 <pre><code>## Warning: Removed 1 rows containing missing values (geom_point).
 
-## Warning: Removed 1 rows containing missing values (geom_path).</code></pre>
-<p><img src="/post/2019-09-22-kan-en-løpe-raskere-med-r_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
+## Warning: Removed 1 row(s) containing missing values (geom_path).</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
 <p>Gir dette noe innsikt som kan hjelpe meg med å løpe raskere? Nei, ikke egentlig. År med mye aktivitet er raskere enn år med lite aktivitet, men det gir jo mening. Hastigheten på halvmaraton og ti-kilometer er ikke veldig ulik, i det store bildet, men i praksis vil jeg mene at forskjellen på 5 blank på kilometeren, og 4 min 30 sekunder er ganske så stor.</p>

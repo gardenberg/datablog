@@ -9,6 +9,7 @@ categories:
 tags: []
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>En kikk på noen ulike teknikker for å sammenlikne variabler/caser, når du vil vite hvor god prognosa di var</em></p>
@@ -21,7 +22,7 @@ tags: []
 <pre class="r"><code>suppressPackageStartupMessages(library(tidyverse))
 library(broom)
 library(here)</code></pre>
-<pre><code>## here() starts at C:/Users/Kauna/Documents/R/test_blogdown</code></pre>
+<pre><code>## here() starts at C:/Users/Kauna/OneDrive/Documents/R/datablog</code></pre>
 <pre class="r"><code>#settings
 theme_set(theme_minimal())
 set.seed(1106)
@@ -52,11 +53,23 @@ for(i in 1:10){
 }
 
 df = test_df</code></pre>
-<div id="hvor-nrme-var-folk" class="section level1">
-<h1>Hvor nærme var folk?</h1>
-<div id="rein-visuell-inspeksjon" class="section level2">
-<h2>Rein visuell inspeksjon</h2>
+<p>#Hvor nærme var folk?</p>
+<p>##Rein visuell inspeksjon</p>
 <table>
+<colgroup>
+<col width="4%" />
+<col width="7%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="9%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="left">parti</th>
@@ -77,141 +90,141 @@ df = test_df</code></pre>
 <tr class="odd">
 <td align="left">Rødt</td>
 <td align="right">3,8</td>
-<td align="right">15</td>
-<td align="right">3</td>
-<td align="right">15</td>
-<td align="right">2</td>
-<td align="right">1</td>
-<td align="right">2</td>
+<td align="right">6</td>
+<td align="right">9</td>
+<td align="right">30</td>
+<td align="right">16</td>
+<td align="right">22</td>
+<td align="right">23</td>
+<td align="right">13</td>
 <td align="right">4</td>
-<td align="right">3</td>
-<td align="right">12</td>
-<td align="right">10</td>
+<td align="right">25</td>
+<td align="right">20</td>
 </tr>
 <tr class="even">
 <td align="left">SV</td>
 <td align="right">6,1</td>
-<td align="right">7</td>
 <td align="right">2</td>
-<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">20</td>
+<td align="right">13</td>
+<td align="right">9</td>
 <td align="right">17</td>
-<td align="right">9</td>
-<td align="right">20</td>
-<td align="right">30</td>
-<td align="right">20</td>
+<td align="right">7</td>
 <td align="right">27</td>
-<td align="right">9</td>
 </tr>
 <tr class="odd">
 <td align="left">Ap</td>
 <td align="right">24,8</td>
-<td align="right">25</td>
+<td align="right">29</td>
 <td align="right">11</td>
-<td align="right">14</td>
-<td align="right">28</td>
-<td align="right">17</td>
-<td align="right">1</td>
+<td align="right">12</td>
+<td align="right">24</td>
+<td align="right">16</td>
+<td align="right">9</td>
 <td align="right">7</td>
-<td align="right">8</td>
-<td align="right">26</td>
-<td align="right">3</td>
+<td align="right">10</td>
+<td align="right">6</td>
+<td align="right">6</td>
 </tr>
 <tr class="even">
 <td align="left">Sp</td>
 <td align="right">14,4</td>
-<td align="right">1</td>
-<td align="right">0</td>
 <td align="right">8</td>
+<td align="right">18</td>
 <td align="right">5</td>
-<td align="right">2</td>
-<td align="right">10</td>
-<td align="right">20</td>
-<td align="right">0</td>
 <td align="right">4</td>
 <td align="right">3</td>
+<td align="right">5</td>
+<td align="right">24</td>
+<td align="right">5</td>
+<td align="right">5</td>
+<td align="right">1</td>
 </tr>
 <tr class="odd">
 <td align="left">MDG</td>
 <td align="right">6,8</td>
-<td align="right">3</td>
-<td align="right">18</td>
-<td align="right">14</td>
-<td align="right">1</td>
-<td align="right">23</td>
-<td align="right">26</td>
-<td align="right">7</td>
-<td align="right">20</td>
+<td align="right">4</td>
 <td align="right">0</td>
-<td align="right">8</td>
+<td align="right">11</td>
+<td align="right">25</td>
+<td align="right">1</td>
+<td align="right">30</td>
+<td align="right">11</td>
+<td align="right">15</td>
+<td align="right">14</td>
+<td align="right">5</td>
 </tr>
 <tr class="even">
 <td align="left">KrF</td>
 <td align="right">4,0</td>
-<td align="right">13</td>
-<td align="right">19</td>
-<td align="right">7</td>
-<td align="right">6</td>
-<td align="right">10</td>
+<td align="right">24</td>
+<td align="right">15</td>
+<td align="right">1</td>
 <td align="right">8</td>
-<td align="right">9</td>
-<td align="right">21</td>
+<td align="right">3</td>
+<td align="right">1</td>
+<td align="right">6</td>
 <td align="right">5</td>
+<td align="right">4</td>
 <td align="right">4</td>
 </tr>
 <tr class="odd">
 <td align="left">V</td>
 <td align="right">3,9</td>
+<td align="right">16</td>
+<td align="right">16</td>
+<td align="right">0</td>
 <td align="right">1</td>
-<td align="right">11</td>
-<td align="right">4</td>
-<td align="right">4</td>
-<td align="right">17</td>
-<td align="right">26</td>
-<td align="right">2</td>
-<td align="right">1</td>
+<td align="right">8</td>
+<td align="right">6</td>
+<td align="right">14</td>
 <td align="right">3</td>
-<td align="right">21</td>
+<td align="right">11</td>
+<td align="right">19</td>
 </tr>
 <tr class="even">
 <td align="left">H</td>
 <td align="right">20,1</td>
-<td align="right">11</td>
-<td align="right">15</td>
-<td align="right">9</td>
-<td align="right">11</td>
-<td align="right">7</td>
 <td align="right">1</td>
+<td align="right">8</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">11</td>
 <td align="right">4</td>
-<td align="right">4</td>
-<td align="right">0</td>
-<td align="right">26</td>
+<td align="right">7</td>
+<td align="right">11</td>
+<td align="right">12</td>
+<td align="right">1</td>
 </tr>
 <tr class="odd">
 <td align="left">FrP</td>
 <td align="right">8,2</td>
+<td align="right">4</td>
+<td align="right">0</td>
+<td align="right">28</td>
+<td align="right">9</td>
+<td align="right">9</td>
+<td align="right">0</td>
+<td align="right">1</td>
 <td align="right">20</td>
-<td align="right">16</td>
-<td align="right">7</td>
-<td align="right">7</td>
-<td align="right">10</td>
-<td align="right">3</td>
-<td align="right">7</td>
 <td align="right">8</td>
-<td align="right">2</td>
-<td align="right">16</td>
+<td align="right">17</td>
 </tr>
 <tr class="even">
 <td align="left">Andre</td>
 <td align="right">7,9</td>
-<td align="right">4</td>
-<td align="right">5</td>
-<td align="right">21</td>
-<td align="right">19</td>
-<td align="right">4</td>
-<td align="right">3</td>
+<td align="right">6</td>
+<td align="right">20</td>
+<td align="right">9</td>
+<td align="right">7</td>
+<td align="right">7</td>
+<td align="right">9</td>
+<td align="right">8</td>
 <td align="right">10</td>
-<td align="right">15</td>
-<td align="right">21</td>
+<td align="right">8</td>
 <td align="right">0</td>
 </tr>
 </tbody>
@@ -224,20 +237,20 @@ df = test_df</code></pre>
 ggplot() + 
   geom_point(data = filter(temp, type == &quot;resultat&quot;), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = &quot;black&quot;) +
   labs(x = &quot;Oppslutning&quot;, y = &quot;Parti&quot;, colour = &quot;Prognose eller resultat?&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Aller først ser vi på de faktiske valgresultatene. Ap er størst, fulgt av Høyre og Senterpartiet. FrP er ganske små, og bolken “Andre” er temmelig svær. Rødt er minst, men ikke langt unna Venstre og KrF.</p>
 <p>Hva så når vi legger på prognosene?</p>
 <pre class="r"><code>ggplot() + 
   geom_point(data = filter(temp, type == &quot;prognose&quot;), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = &quot;grey&quot;) +
   geom_point(data = filter(temp, type == &quot;resultat&quot;), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = &quot;black&quot;) +
   labs(x = &quot;Oppslutning&quot;, y = &quot;Parti&quot;, colour = &quot;Prognose eller resultat?&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <p>Skikkelig tilfeldig spredning utover! Allikevel ser det ut til å være en del overplotting - det er få av linjene som har 10 hele grå punkter. Dermed lønner det seg å bruke en anne geome - en som teller opp litt. Små prikker er en observasjon, medium to og de største er tre observasjoner.</p>
 <pre class="r"><code>ggplot() + 
   geom_count(data = filter(temp, type == &quot;prognose&quot;), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = &quot;grey&quot;, show.legend = FALSE) +
   geom_point(data = filter(temp, type == &quot;resultat&quot;), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = &quot;black&quot;) +
   labs(x = &quot;Oppslutning&quot;, y = &quot;Parti&quot;, colour = &quot;Prognose eller resultat?&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>Vanskelig - for ikke å si umulig -å si med ett blikk hvem av de ti seriene som er nærmest fasiten, totalt sett. Vi trenger ett mål. Her går jeg igjennom:</p>
 <ul>
 <li>Evklidiansk distanse</li>
@@ -246,36 +259,34 @@ ggplot() +
 <li>RMSE</li>
 <li>MAE</li>
 </ul>
-</div>
-<div id="euklidiansk-distanse" class="section level2">
-<h2>Euklidiansk distanse</h2>
-<p>Evklidiansk distanse er et fancy navn på avstand i et flatt plan mellom to punkter. For avstanden mellom to vektorer (eller to variabler) er denne definert som den kvardratroten av den kvadrerte forskjellen mellom punktene i de to seriene. Hvorfor kvadrere? Fordi summen av forskjeller mellom to serier ikke alltid er informativt, hvis negative og positive forskjeller nuller hverandre ut.</p>
+<p>##Euklidiansk distanse
+Evklidiansk distanse er et fancy navn på avstand i et flatt plan mellom to punkter. For avstanden mellom to vektorer (eller to variabler) er denne definert som den kvardratroten av den kvadrerte forskjellen mellom punktene i de to seriene. Hvorfor kvadrere? Fordi summen av forskjeller mellom to serier ikke alltid er informativt, hvis negative og positive forskjeller nuller hverandre ut.</p>
 <p>Lav avstand er bra, stor avstand er dårlig:</p>
 <pre class="r"><code>temp = t(select(df, -parti))
 evklid = dist(temp)
 print(evklid, digits = 1)</code></pre>
-<pre><code>##             resultat deltaker_1 deltaker_2 deltaker_3 deltaker_4
-## deltaker_1        25                                            
-## deltaker_2        30         28                                 
-## deltaker_3        26         29         28                      
-## deltaker_4        22         27         37         28           
-## deltaker_5        30         32         18         29         33
-## deltaker_6        46         51         36         42         47
-## deltaker_7        35         40         42         37         32
-## deltaker_8        38         36         27         30         33
-## deltaker_9        36         35         47         34         19
-## deltaker_10       33         36         27         37         42
-##             deltaker_5 deltaker_6 deltaker_7 deltaker_8 deltaker_9
-## deltaker_1                                                        
-## deltaker_2                                                        
-## deltaker_3                                                        
-## deltaker_4                                                        
-## deltaker_5                                                        
-## deltaker_6          25                                            
-## deltaker_7          38         35                                 
-## deltaker_8          27         34         29                      
-## deltaker_9          41         48         30         35           
-## deltaker_10         31         37         43         43         51</code></pre>
+<pre><code>##             resultat deltaker_1 deltaker_2 deltaker_3 deltaker_4 deltaker_5
+## deltaker_1        32                                                       
+## deltaker_2        30         28                                            
+## deltaker_3        41         48         46                                 
+## deltaker_4        31         33         40         31                      
+## deltaker_5        29         38         34         32         33           
+## deltaker_6        40         46         42         37         23         33
+## deltaker_7        29         36         21         41         34         31
+## deltaker_8        27         40         37         33         29         27
+## deltaker_9        33         40         32         27         27         22
+## deltaker_10       44         45         44         37         42         23
+##             deltaker_6 deltaker_7 deltaker_8 deltaker_9
+## deltaker_1                                             
+## deltaker_2                                             
+## deltaker_3                                             
+## deltaker_4                                             
+## deltaker_5                                             
+## deltaker_6                                             
+## deltaker_7          31                                 
+## deltaker_8          33         32                      
+## deltaker_9          22         25         28           
+## deltaker_10         38         36         31         29</code></pre>
 <p>Ut ifra dette målet ser vi at deltaker_4 var nærmest resultatet, fulgt av deltaker 1 og 3.</p>
 <p>Hvis vi var interessert i alle forskjellene mellom alle, kunne dette vært visualisert med ett heatmap. Men det er vi ikke - vi er kun interessert i forskjellen mellom deltakerne og det faktiske resultatet.</p>
 <pre class="r"><code>temp = dist(t(select(df, -parti)))
@@ -285,12 +296,10 @@ temp = tidy(temp) %&gt;%
 ggplot(data = temp) + 
   geom_col(aes(x = fct_reorder(item1, distance), y = distance)) +
   labs(x = &quot;Hvor langt unna fasiten?&quot;, y = &quot;Avstand&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <pre class="r"><code>resultatliste = select(temp, person = item1, evklid = distance)</code></pre>
-</div>
-<div id="korrelasjon-pearson" class="section level2">
-<h2>Korrelasjon (Pearson)</h2>
-<p>Men evklidiansk distanse er ikke det eneste målet - vi har også klassikeren korrelasjon. Korrelasjon er ikke veldig ulikt et avstandsmål, men mens evklidiansk avstand forutsetter at de to vektorene (eller variablene) X og Y er på samme skala, skalerer korrelasjon (Pearsons, i dette tilfellet) først med standardavviket til X og Y. Pearson er i bunn og grunn et gjennomsnittlig produkt av x og Y.</p>
+<p>##Korrelasjon (Pearson)
+Men evklidiansk distanse er ikke det eneste målet - vi har også klassikeren korrelasjon. Korrelasjon er ikke veldig ulikt et avstandsmål, men mens evklidiansk avstand forutsetter at de to vektorene (eller variablene) X og Y er på samme skala, skalerer korrelasjon (Pearsons, i dette tilfellet) først med standardavviket til X og Y. Pearson er i bunn og grunn et gjennomsnittlig produkt av x og Y.</p>
 <pre class="r"><code>temp = select(df, -parti)
 korr_matrise = cor(temp)
 
@@ -302,26 +311,20 @@ temp = data.frame(korr_matrise) %&gt;%
 ggplot(data = temp) + 
   geom_col(aes(x = fct_reorder(id2, korrelasjon), y = korrelasjon)) +
   labs(x = &quot;Hvor langt unna fasiten?&quot;, y = &quot;Korrelasjon&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
 <p>Deltaker_4 og deltaker_1 er fortsatt nærmest. Her ser vi faktisk at deltaker_6 og deltaker_8 har en betydelig negativ korrelasjon.</p>
-</div>
-<div id="forklart-variasjon---r2" class="section level2">
-<h2>Forklart variasjon - R2</h2>
-<p>Her brukes også kvadrert R som et mål på forklart variasjon. Dette er jo bare den kvadrerte korrelasjonskoeffisienten fra Pearsons over, og rangeringa blir dermed ikke annerledes. Men merk! Her blir det en liten feil. Over så vi negative korrelasjoner. I tilfellet valgresultat er ikke det ønskelig - det betyr jo at når deltakeren har gjettet høyere, så har resultatet blitt lavere. I matematisk forstand kan dette fortsatt forklare variasjon, men ikke i noen meningsfull form her.</p>
+<p>##Forklart variasjon - R2
+Her brukes også kvadrert R som et mål på forklart variasjon. Dette er jo bare den kvadrerte korrelasjonskoeffisienten fra Pearsons over, og rangeringa blir dermed ikke annerledes. Men merk! Her blir det en liten feil. Over så vi negative korrelasjoner. I tilfellet valgresultat er ikke det ønskelig - det betyr jo at når deltakeren har gjettet høyere, så har resultatet blitt lavere. I matematisk forstand kan dette fortsatt forklare variasjon, men ikke i noen meningsfull form her.</p>
 <pre class="r"><code>temp$r.kvadrert = temp$korrelasjon^2
 
 ggplot(data = temp) + 
   geom_col(aes(x = fct_reorder(id2, r.kvadrert), y = r.kvadrert)) +
   labs(x = &quot;Hvor langt unna fasiten?&quot;, y = &quot;Forklart variasjon&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <pre class="r"><code>resultatliste = left_join(resultatliste, select(temp, -id1), by = c(&quot;person&quot; = &quot;id2&quot;))</code></pre>
-<pre><code>## Warning: Column `person`/`id2` joining factor and character vector,
-## coercing into character vector</code></pre>
 <p>Deltaker_4 har i hvert fall klart å forklare noe av variasjonen i de faktiske valgresultatene.</p>
-</div>
-<div id="vanlige-prognosemal---root-mean-square-error-rmse-og-mean-average-error-mae" class="section level2">
-<h2>Vanlige prognosemål - Root mean square error (RMSE) og Mean average error (MAE)</h2>
-<p>RMSE gir større straff til store feil: hvis det å ta feil med 10 er mer enn dobbelt så ille som å ta feil med 5, så er RMSE riktig mål. Hvis det å ta feil med 10 er akkurat dobbelt så ille som å ta feil med 5, så er MAE riktigere.</p>
+<p>##Vanlige prognosemål - Root mean square error (RMSE) og Mean average error (MAE)
+RMSE gir større straff til store feil: hvis det å ta feil med 10 er mer enn dobbelt så ille som å ta feil med 5, så er RMSE riktig mål. Hvis det å ta feil med 10 er akkurat dobbelt så ille som å ta feil med 5, så er MAE riktigere.</p>
 <pre class="r"><code>#RMSE
 rmse &lt;- function(feil){
     sqrt(mean(feil^2))
@@ -334,15 +337,13 @@ mae &lt;- function(feil){
 <p>Sjølve utregninga skjuler jeg - den er temmelig stygg, ettersom kopiering gikk raskere enn funksjoner.</p>
 <pre class="r"><code>qplot(data = temp, x = fct_reorder(person, rmse), y = rmse, geom = &quot;col&quot;) + 
   labs(x = &quot;Person&quot;, y = &quot;RMSE&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
 <pre class="r"><code>qplot(data = temp, x = fct_reorder(person, mae), y = mae, geom = &quot;col&quot;) + 
   labs(x = &quot;Person&quot;, y = &quot;MAE&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-12-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-12-2.png" width="672" /></p>
 <pre class="r"><code>resultatliste = left_join(resultatliste, temp)</code></pre>
 <pre><code>## Joining, by = &quot;person&quot;</code></pre>
-</div>
-<div id="oppsummering" class="section level2">
-<h2>Oppsummering</h2>
+<p>##Oppsummering</p>
 <p>Så for å oppsummere, hvem var best? Ut ifra de ulike målene vi har sett her, ser resultatene relativt entydige ut: deltaker_4 har en lavere evklidiansk avstand til resultatet, har en høyere korrelasjon, en høyere forklart variasjon, en lavere RMSE og en lavere MAE.</p>
 <pre class="r"><code>knitr::kable(arrange(resultatliste, evklid), digits = 1)</code></pre>
 <table>
@@ -357,86 +358,6 @@ mae &lt;- function(feil){
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
-<td align="left">deltaker_4</td>
-<td align="right">21.6</td>
-<td align="right">0.6</td>
-<td align="right">0.4</td>
-<td align="right">6.8</td>
-<td align="right">5.5</td>
-</tr>
-<tr class="even">
-<td align="left">deltaker_1</td>
-<td align="right">25.4</td>
-<td align="right">0.4</td>
-<td align="right">0.2</td>
-<td align="right">8.0</td>
-<td align="right">6.6</td>
-</tr>
-<tr class="odd">
-<td align="left">deltaker_3</td>
-<td align="right">25.8</td>
-<td align="right">0.2</td>
-<td align="right">0.0</td>
-<td align="right">8.2</td>
-<td align="right">6.9</td>
-</tr>
-<tr class="even">
-<td align="left">deltaker_5</td>
-<td align="right">29.8</td>
-<td align="right">0.1</td>
-<td align="right">0.0</td>
-<td align="right">9.4</td>
-<td align="right">8.0</td>
-</tr>
-<tr class="odd">
-<td align="left">deltaker_2</td>
-<td align="right">30.2</td>
-<td align="right">0.0</td>
-<td align="right">0.0</td>
-<td align="right">9.5</td>
-<td align="right">8.2</td>
-</tr>
-<tr class="even">
-<td align="left">deltaker_10</td>
-<td align="right">33.2</td>
-<td align="right">0.0</td>
-<td align="right">0.0</td>
-<td align="right">10.5</td>
-<td align="right">8.2</td>
-</tr>
-<tr class="odd">
-<td align="left">deltaker_7</td>
-<td align="right">34.8</td>
-<td align="right">-0.1</td>
-<td align="right">0.0</td>
-<td align="right">11.0</td>
-<td align="right">7.4</td>
-</tr>
-<tr class="even">
-<td align="left">deltaker_9</td>
-<td align="right">35.7</td>
-<td align="right">0.2</td>
-<td align="right">0.0</td>
-<td align="right">11.3</td>
-<td align="right">8.9</td>
-</tr>
-<tr class="odd">
-<td align="left">deltaker_8</td>
-<td align="right">38.3</td>
-<td align="right">-0.3</td>
-<td align="right">0.1</td>
-<td align="right">12.1</td>
-<td align="right">10.2</td>
-</tr>
-<tr class="even">
-<td align="left">deltaker_6</td>
-<td align="right">45.5</td>
-<td align="right">-0.5</td>
-<td align="right">0.2</td>
-<td align="right">14.4</td>
-<td align="right">11.8</td>
-</tr>
 </tbody>
 </table>
 <p>Hvordan ser dette ut i plottet vårt fra over?</p>
@@ -448,11 +369,9 @@ ggplot() +
   geom_point(data = filter(temp, type == &quot;resultat&quot;), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = &quot;black&quot;) +
   geom_point(data = filter(temp, person == &quot;deltaker_4&quot;), aes(x = prognose, y = fct_reorder(parti, prognose)), colour = &quot;red&quot;) +
   labs(x = &quot;Oppslutning&quot;, y = &quot;Parti&quot;, colour = &quot;Prognose eller resultat?&quot;)</code></pre>
-<p><img src="/post/2019-09-10-hvor-like-er-to-dataserier_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
-</div>
-<div id="men-hvilke-valgresultater-var-de-ulike-deltakerne-nrmest" class="section level2">
-<h2>Men hvilke valgresultater var de ulike deltakerne nærmest?</h2>
-<p>En måte å snu på dette på, er ved å finne ut hvilke faktiske valgresultater de ulike deltakerne var nærmest. Valgresultatene hentes fra <a href="https://valgresultat.no/eksport-av-valgresultater?type=ko&amp;year=2019">valgresultat.no</a>.</p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-14-1.png" width="672" /></p>
+<p>##Men hvilke valgresultater var de ulike deltakerne nærmest?
+En måte å snu på dette på, er ved å finne ut hvilke faktiske valgresultater de ulike deltakerne var nærmest. Valgresultatene hentes fra <a href="https://valgresultat.no/eksport-av-valgresultater?type=ko&amp;year=2019">valgresultat.no</a>.</p>
 <p>Etter litt bearbeiding får jeg denne tabellen:</p>
 <table>
 <thead>
@@ -465,66 +384,54 @@ ggplot() +
 <tbody>
 <tr class="odd">
 <td align="left">deltaker_1</td>
-<td align="left">3039_Flå</td>
-<td align="right">7.3</td>
+<td align="left">1874_Moskenes</td>
+<td align="right">12.2</td>
 </tr>
 <tr class="even">
 <td align="left">deltaker_2</td>
-<td align="left">3039_Flå</td>
-<td align="right">9.3</td>
+<td align="left">4633_Fedje</td>
+<td align="right">23.8</td>
 </tr>
 <tr class="odd">
 <td align="left">deltaker_3</td>
-<td align="left">resultat</td>
-<td align="right">25.8</td>
+<td align="left">1874_Moskenes</td>
+<td align="right">18.7</td>
 </tr>
 <tr class="even">
 <td align="left">deltaker_4</td>
-<td align="left">resultat</td>
-<td align="right">21.6</td>
+<td align="left">1874_Moskenes</td>
+<td align="right">16.2</td>
 </tr>
 <tr class="odd">
 <td align="left">deltaker_5</td>
 <td align="left">3039_Flå</td>
-<td align="right">8.2</td>
+<td align="right">15.2</td>
 </tr>
 <tr class="even">
 <td align="left">deltaker_6</td>
-<td align="left">5043_Raarvihke - Røyrvik</td>
-<td align="right">5.5</td>
+<td align="left">3436_Nord-Fron</td>
+<td align="right">15.3</td>
 </tr>
 <tr class="odd">
 <td align="left">deltaker_7</td>
 <td align="left">4633_Fedje</td>
-<td align="right">21.2</td>
+<td align="right">15.0</td>
 </tr>
 <tr class="even">
 <td align="left">deltaker_8</td>
 <td align="left">4643_Årdal</td>
-<td align="right">14.7</td>
+<td align="right">20.6</td>
 </tr>
 <tr class="odd">
 <td align="left">deltaker_9</td>
-<td align="left">resultat</td>
-<td align="right">35.7</td>
+<td align="left">3819_Hjartdal</td>
+<td align="right">14.9</td>
 </tr>
 <tr class="even">
 <td align="left">deltaker_10</td>
-<td align="left">1151_Utsira</td>
-<td align="right">3.2</td>
-</tr>
-<tr class="odd">
-<td align="left">deltaker_10</td>
-<td align="left">1816_Vevelstad</td>
-<td align="right">3.2</td>
-</tr>
-<tr class="even">
-<td align="left">deltaker_10</td>
-<td align="left">4629_Modalen</td>
-<td align="right">3.2</td>
+<td align="left">3039_Flå</td>
+<td align="right">2.6</td>
 </tr>
 </tbody>
 </table>
 <p>Deltaker 3, 4 og 9 har lavest avstand til valgresultatet for hele landet. Avstanden er imidlertid ikke spesielt lav. 1, 2 og 5 ligger nærmest Flå. Deltaker 10 er veldig overraskende nærme tre små kommuner.</p>
-</div>
-</div>

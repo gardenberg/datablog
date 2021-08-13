@@ -9,10 +9,11 @@ tags:
   - survival
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p>Overlevelsesanalyse, eller survival, eller event history analysis er en analyse av tid-til-hendelse (time-to-event). Med denne metoden kan en estimere sannsynligheten for at en hendelse vil inntreffe på tidspunkt T. Det er ikke bare overlevelse eller død dette egner seg for, men de fleste ulike typer hendelse. Det klassiske ikke-sykdomseksempelet ser ut til å være tidspunkt for når en maskin bryter sammen (eller dør, om du vil).</p>
-<p>Den følgende teksten er inspirert av <a href="https://www.r-bloggers.com/steps-to-perform-survival-analysis-in-r/amp/">“Steps to perform survival analysis in R</a> og MainDonald og Braun (2003) “Data analysis and graphics using R”. Den ble skrevet litt før jeg deltok på et lengre kurs, så det er litt grunnleggende.</p>
+<p>Den følgende teksten er inspirert av <a href="https://www.r-bloggers.com/steps-to-perform-survival-analysis-in-r/amp/">"Steps to perform survival analysis in R</a> og MainDonald og Braun (2003) “Data analysis and graphics using R”. Den ble skrevet litt før jeg deltok på et lengre kurs, så det er litt grunnleggende.</p>
 <div id="kort-om-overlevelsesanalyse" class="section level2">
 <h2>Kort om overlevelsesanalyse</h2>
 <p>Overlevelsesfunksjonen til en variabel X er definert som sannsynligheten for at variabelen er større enn x. X er gjerne tid, slik at overlevelsesfunksjonen gir sannsynligheten for at en person eller et objekt vil “overleve” lenger enn et gitt tidspunkt, i betydningen ikke få en eller annen status/hendelse, som tar enheten ut av observasjonsrekken.</p>
@@ -63,11 +64,11 @@ str(pbc)</code></pre>
 </ul>
 <pre class="r"><code>qplot(time,data=pbc)</code></pre>
 <pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
-<p><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <pre class="r"><code>qplot(as.factor(status),data=pbc)</code></pre>
-<p><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-2-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-2.png" width="672" /></p>
 <pre class="r"><code>qplot(as.factor(status),time,data=pbc,geom=&quot;boxplot&quot;,group=status)</code></pre>
-<p><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-2-3.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-2-3.png" width="672" /></p>
 </div>
 <div id="kaplan-meier" class="section level2">
 <h2>Kaplan-Meier</h2>
@@ -91,14 +92,14 @@ survival_func</code></pre>
 <pre class="r"><code>plot(survival_func)
 #dessverre ingen enkel mulighet for å plott survfit-objektet direkte. Prøver survminer-pakken.
 survminer::ggsurvplot(survival_func)</code></pre>
-<p><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-4-1.png" width="672" /><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
 <pre class="r"><code>#dette viser seg å være temmelig unødig, det kan likegreit fikses med broom og ggplot2
 
 ggplot(data = broom::tidy(survival_func), aes(x = time, y = estimate))+
   geom_line() +
   geom_ribbon(aes(ymin=conf.low,ymax=conf.high),alpha=0.2)+
   ggtitle(&quot;Kaplan-Meier survival curve&quot;)</code></pre>
-<p><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-4-3.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-3.png" width="672" /></p>
 <p>Y-aksen viser sannsynlighet for overlevelse (ikke oppleve status==2), mens x-aksen viser tid i dager. Sannsynligheten for å overleve går ned med tid (og sannsynligheten for å dø går opp). F.eks. er sannsynligheten for å overleve mer enn 1000 dager ca. 80 %.</p>
 <p>Denne bygger på antakelsen om at individene er uavhengige, og er en estimering av den underliggende overlevelsesfunksjonen, som teoretisk sett er glatt.</p>
 </div>
@@ -122,7 +123,7 @@ cox_curve_0</code></pre>
 ##       n  events  median 0.95LCL 0.95UCL 
 ##     418     161    3395    3090    3853</code></pre>
 <pre class="r"><code>plot(cox_curve_0)</code></pre>
-<p><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>Men cox-modellen kan også brukes til å estimere en modell. Her er en enkel kjøkkenvask-modell (alle variabler som uavhengige variabler) for pbc-datasettet.</p>
 <pre class="r"><code>cox_model = coxph(Surv(time,status==2)~.,data=pbc)
 summary(cox_model)</code></pre>
@@ -175,13 +176,12 @@ summary(cox_model)</code></pre>
 ## stage       1.5634     0.6397    1.1020     2.218
 ## 
 ## Concordance= 0.849  (se = 0.018 )
-## Rsquare= 0.462   (max possible= 0.981 )
 ## Likelihood ratio test= 171.3  on 18 df,   p=&lt;2e-16
 ## Wald test            = 172.5  on 18 df,   p=&lt;2e-16
 ## Score (logrank) test = 286.1  on 18 df,   p=&lt;2e-16</code></pre>
 <pre class="r"><code>cox_curve = survfit(cox_model)
 plot(cox_curve)</code></pre>
-<p><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <p>Hvordan skal survival-plottet her forstås? Det er fortsatt avtakende sannsynlighet for overlevelse med tid, men med større konfidensintervaller mot slutten (naturlig, ettersom nesten halvparten av observasjonene faller bort som missing). Men for hvilke verdier av de uavhengige variablene? De faktiske verdiene?</p>
 </div>
 <div id="survival-in-the-forest" class="section level2">
@@ -195,12 +195,12 @@ plot(cox_curve)</code></pre>
 test = data.frame(cox_curve$surv,broom::tidy(cox_curve)$estimate)
 head(test)</code></pre>
 <pre><code>##   cox_curve.surv broom..tidy.cox_curve..estimate
-## 1      0.9992460                       0.9992460
-## 2      0.9983887                       0.9983887
-## 3      0.9974917                       0.9974917
-## 4      0.9965868                       0.9965868
-## 5      0.9956642                       0.9956642
-## 6      0.9947402                       0.9947402</code></pre>
+## 1      0.9990059                       0.9990059
+## 2      0.9978760                       0.9978760
+## 3      0.9966940                       0.9966940
+## 4      0.9955020                       0.9955020
+## 5      0.9942870                       0.9942870
+## 6      0.9930705                       0.9930705</code></pre>
 <pre class="r"><code>#setter de sammen
 modeller = bind_rows(cox_0 = broom::tidy(cox_curve_0),cox_alle = broom::tidy(cox_curve),km = broom::tidy(survival_func),.id=&quot;modell&quot;)
 
@@ -208,6 +208,6 @@ ggplot(data = modeller, aes(x = time, y = estimate, color = modell))+
   geom_line() +
   geom_ribbon(aes(ymin=conf.low,ymax=conf.high),alpha=0.2)+
   ggtitle(&quot;Sammenlikning av Survival Curves&quot;)</code></pre>
-<p><img src="/post/2019-03-05-grunnleggende-overlevelsesanalyse_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <p>Cox-modellen med alle variablene har en høyere sannsynlighet for overlevelse i starten, men den faller brattere, og har større konfidensintervaller. Null-modellen med cox er så godt som lik Kaplan-Meier-kurven.</p>
 </div>

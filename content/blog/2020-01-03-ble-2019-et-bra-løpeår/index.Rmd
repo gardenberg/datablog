@@ -49,7 +49,7 @@ theme_set(theme_minimal())
 set.seed(1106)
 options(scipen = 100)
 
-df <- read.csv2(here::here("content/data/runs_04012020.csv"), stringsAsFactors=FALSE)
+df <- read.csv2("runs_04012020.csv", stringsAsFactors=FALSE)
 df = filter(df, year != 2020)
 
 ```

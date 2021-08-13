@@ -27,6 +27,7 @@ library(tidytext)
 library(here)
 library(tm)
 library(topicmodels)
+library(broom)
 
 #settings
 theme_set(theme_minimal())
@@ -41,10 +42,9 @@ Helt til slutt fjerner jeg også stoppord - 176 vanlige ord i det norske språke
 
 ```{r, warning = FALSE, message = FALSE}
 #med TM
-mappe <- here("content/data/valgprogram")
 
 # lag et korpus fra pdf-filene
-converted <- VCorpus(DirSource(mappe), readerControl = list(reader = readPDF, language = "nb")) %>% 
+converted <- VCorpus(DirSource("valgprogram"), readerControl = list(reader = readPDF, language = "nb")) %>% 
   DocumentTermMatrix(., control = list(language = "nb", 
                                        removePunctuation = TRUE,
                                        removeNumbers = TRUE,

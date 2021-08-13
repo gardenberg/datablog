@@ -14,7 +14,7 @@ __Hva handler denne artikkelen om?__ _Hvordan visualisere fordelinger på tvers 
 
 Det har vært en del oppstuss rundt skolefritidsordninga - SFO, eller AKS her i Oslo - de siste dagene. NTNU Samfunnsforskning har levert en evalueringsrapport som i følge NRK peker på [enorme forskjer i pris og tilbud](https://www.nrk.no/troms/enorme-forskjeller-i-pris-og-tilbud-pa-sfo_-_-sann-skal-det-ikke-vaere-1.14643999). Det er særlig en NTB-melding som har blitt trykt opp rundt omkring, i følge med en datavisualisering fra nyhetsgrafikk.no. Den skal være limt inn under.
 
-![Utklipp fra Dagsavisen 2. august 2019](/post/2019-08-02-fordelinger-og-sfo-deltakelse-ggplot2_files/dagsavisen_010819.jpg){width=40% height=40%}
+![Utklipp fra Dagsavisen 2. august 2019](dagsavisen_010819.jpg){width=40% height=40%}
 
 Grafikken har masse informasjon, men er allikevel ikke spesielt informativ. Hvorfor ikke? Etter min mening prøver den å dekke over for mye på en gang. Tittelen antyder at den handler om at flest bybarn bruker SFO. Men figurene viser oss andel barn som bruker SFO etter fylke - og ikke byer vs. ikke-byer. Videre trekker den inn gjennomsnittlig månedspris på fylkesnivå, og de ti dyreste og billigste SFO-kommunene - og hvor disse ligger i landet. Altså heller ikke relatert til overskriften.
 
@@ -54,7 +54,7 @@ df = sfo_data[[2]] %>%
 names(df) = c("knr_2018","value")
 
 #sentralitet
-sentralitet = read.csv2(here("content/data/sentralitet_2018.csv"), stringsAsFactors = FALSE, colClasses = c("character", "integer", "integer"))
+sentralitet = read.csv2("sentralitet_2018.csv", stringsAsFactors = FALSE, colClasses = c("character", "integer", "integer"))
 
 sentralitet$sklasse_2018 = factor(sentralitet$sklasse_2018, labels = c("Mest sentral", "2", "3", "4", "5", "Minst sentral"))
 

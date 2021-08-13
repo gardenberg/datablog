@@ -9,6 +9,7 @@ categories:
 tags: []
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p><strong>Hva handler denne artikkelen om?</strong> <em>Hvorfor gjennomføre en utvalgsundersøkelse, hvordan et utvalg fra en populasjon forholder seg til populasjonen, og hvordan du kan si noe om hvor sikker du er på at estimatet ditt fra utvalget er i nærheten av det reelle tallet</em></p>
@@ -52,7 +53,7 @@ df$holdning_2 = rnorm(1000, 12500, 2500)
 #kunne egentlig også brukt sample() med replacement = TRUE?
 df$holdning_3 = round(runif(1000, min = 1, max = 5))</code></pre>
 <p>Fordelingen av holdningene i populasjonen ser da slik ut:</p>
-<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-3-1.png" width="672" /><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-3-2.png" width="672" /><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-3-3.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-1.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-2.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-3-3.png" width="672" /></p>
 <p>Her ser vi altså at</p>
 <ul>
 <li>ja eller nei er temmelig likt fordelt i populasjonen (50,4 % sier ja)</li>
@@ -72,12 +73,7 @@ df$holdning_3 = round(runif(1000, min = 1, max = 5))</code></pre>
 <p>Så hvordan ville fordelinga av holdninga sett ut i et sjanseutvalg på f.eks. 100 personer?</p>
 <pre class="r"><code>utvalg = sample_n(df, 100, replace = FALSE)</code></pre>
 <p>Antallet er åpenbart annerledes - men treffer utvalget på samme andeler?</p>
-<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)
-## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-5-1.png" width="672" /><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
-<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)
-## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-5-3.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-2.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-3.png" width="672" /></p>
 <p>Naturlig nok - ikke helt. Men hvor nærme er dette? Og hvor nærme kunne vi sagt at det var, hvis vi ikke hadde kjent de rød verdiene - populasjonsverdiene?</p>
 <p>For å svare på det, må vi en liten omtur om sannsynlighetsfordelinger:</p>
 </div>
@@ -94,14 +90,10 @@ for(i in 2:100){
   utvalg = bind_rows(utvalg, temp)
 }</code></pre>
 <p>Vi kan begynne med det første spørsmålet - ja eller nei-spørsmålet, kodet som 0 og 1. Hvis vi beregner gjennomsnittlig andel som har besvart dette med ja i de ulike utvalgene, så kan vi vise hvordan gjennomsnittene i disse utvalgene fordeler seg.</p>
-<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <p>Den svarte linja viser fordelinga av gjennomsnittlig andel hesteeiere i 100 utvalg fra populasjonen. Den røde, blå og grønne viser henholdsvis 10, 20 og 50 utvalgsgjennomsnitt. Jo flere utvalg, jo mer bør den sentrere seg rundt der vi - fra over - veit at det faktiske gjennomsnittet ligger.</p>
 <p>Tilsvarende øvelse kan gjentas for den kontinuerlige variabelen, og den diskrete variabelen.</p>
-<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
-<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
-<p><img src="/post/2019-11-17-grunnleggende-statistiske-slutninger_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-1.png" width="672" /><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
 <p>Så hva er poenget med dette? Deto flere utvalg en trekker fra en populasjon, jo flere av utvalgene vil ha gjennomsnitt i nærheten av det sanne utvalget. Dette gjelder særlig for større utvalg (over ca. 50?). For de fleste praktiske formål, hvor vi ikke kjenner populasjonsverdien, og vi ikke kan måle den direkte, er det også upraktisk å ta et stort antall utvalgsundersøkelser. Men fordi vi ser at parameterestimatene i et stort antall utvalg er om lag normalfordelt (også for verdier som ikke selv er normalfordelte), kan vi estimere hvor usikre vi er på at den sanne populasjonen ligger innafor et intervall rundt punktestimatet vårt.</p>
 </div>
 <div id="slutninger-om-en-andel" class="section level2">

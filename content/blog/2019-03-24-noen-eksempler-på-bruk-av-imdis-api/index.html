@@ -10,10 +10,11 @@ tags:
   - datasett
 ---
 
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 
 <p>IMDis <a href="https://www.imdi.no/tall-og-statistikk/">tall og statistikk-nettsider</a> henter dataene sine om innvandring og integrering i kommuner, fylker og Norge fra et API.</p>
-<p>APIet er dessverre ikke dokumentert, men lar seg enkelt utforske ved hjelp av en nettleser-konsoll, f.eks. i Chrome. Her kommer et kort forsøk på litt forklaring. Datasettet bruker NLOD-lisensen.</p>
+<p>APIet er dessverre ikke dokumentert, men lar seg enkelt utforske ved hjelp av en nettleser-konsoll, f.eks. i Chrome. Her kommer et kort forsøk på litt forklaring. Datasettet bruker NLOD-lisensen. (Det gjorde i hvert fall det i 2019, men sjekk gjerne med IMDis nettsider om det har skjedd endringer).</p>
 <div id="innhold-i-datasettet" class="section level2">
 <h2>Innhold i datasettet</h2>
 <p>Datasettet har informasjon om innvandrere og integrering på en rekke områder i norske kommuner, næringsregioner, fylker, hele landet og bydeler i Oslo, og er tilgjengelig med NLOD-lisens (se nederst for lisens-betingelser). Noe kommer fra IMDi, men mesteparten kommer fra Statistisk sentralbyrå (SSB).</p>
@@ -31,7 +32,7 @@ library(here)
 library(ggplot2)
 
 #scripts
-source(here(&quot;content/scripts/imdi_api_function.R&quot;))
+source(&quot;imdi_api_function.R&quot;)
 
 #theme for ggplot2
 theme_set(theme_minimal())</code></pre>
@@ -72,6 +73,132 @@ kable(df)</code></pre>
 <td align="left">norsk_prover</td>
 </tr>
 <tr class="even">
+<td align="left">befolkning_opprinnelsesland_botid</td>
+</tr>
+<tr class="odd">
+<td align="left">barnehagedeltakelse</td>
+</tr>
+<tr class="even">
+<td align="left">ikke_arbutd_innvkat_alder</td>
+</tr>
+<tr class="odd">
+<td align="left">ikke_arbutd_innvkat_land</td>
+</tr>
+<tr class="even">
+<td align="left">sosialhjelp</td>
+</tr>
+<tr class="odd">
+<td align="left">befolkning_innvandringsgrunn</td>
+</tr>
+<tr class="even">
+<td align="left">sysselsatte_innvandringsgrunn</td>
+</tr>
+<tr class="odd">
+<td align="left">flyktning_botid_flytting</td>
+</tr>
+<tr class="even">
+<td align="left">sysselsatte_innvkat</td>
+</tr>
+<tr class="odd">
+<td align="left">sysselsatte_innvkat_alder</td>
+</tr>
+<tr class="even">
+<td align="left">sysselsatte_botid_land</td>
+</tr>
+<tr class="odd">
+<td align="left">sysselsatte_kjonn_land</td>
+</tr>
+<tr class="even">
+<td align="left">sysselsatte_land</td>
+</tr>
+<tr class="odd">
+<td align="left">arbledige_innvkat_land</td>
+</tr>
+<tr class="even">
+<td align="left">videregaende_deltakelse</td>
+</tr>
+<tr class="odd">
+<td align="left">videregaende_fullfort</td>
+</tr>
+<tr class="even">
+<td align="left">ungdom_utenfor_opplaring</td>
+</tr>
+<tr class="odd">
+<td align="left">voksne_videregaende</td>
+</tr>
+<tr class="even">
+<td align="left">utdanningsniva</td>
+</tr>
+<tr class="odd">
+<td align="left">grunnskolepoeng</td>
+</tr>
+<tr class="even">
+<td align="left">grunnskolepoeng_innvandrere</td>
+</tr>
+<tr class="odd">
+<td align="left">sysselsatte_botid</td>
+</tr>
+<tr class="even">
+<td align="left">voksne_grunnskole</td>
+</tr>
+<tr class="odd">
+<td align="left">tilskudd</td>
+</tr>
+<tr class="even">
+<td align="left">vedvarende_lavinntekt</td>
+</tr>
+<tr class="odd">
+<td align="left">gjennomsnittsinntekt</td>
+</tr>
+<tr class="even">
+<td align="left">befolkning_hovedgruppe</td>
+</tr>
+<tr class="odd">
+<td align="left">befolkning_opprinnelsesland</td>
+</tr>
+<tr class="even">
+<td align="left">befolkning_verdensregion_9</td>
+</tr>
+<tr class="odd">
+<td align="left">befolkning_verdensregion_3</td>
+</tr>
+<tr class="even">
+<td align="left">befolkning_alder</td>
+</tr>
+<tr class="odd">
+<td align="left">befolkning_botid</td>
+</tr>
+<tr class="even">
+<td align="left">intro_avslutning_direkte_3</td>
+</tr>
+<tr class="odd">
+<td align="left">intro_avslutning_direkte_8</td>
+</tr>
+<tr class="even">
+<td align="left">intro_deltakere</td>
+</tr>
+<tr class="odd">
+<td align="left">intro_tiltak_4</td>
+</tr>
+<tr class="even">
+<td align="left">intro_tiltak_12</td>
+</tr>
+<tr class="odd">
+<td align="left">bru_motivasjon</td>
+</tr>
+<tr class="even">
+<td align="left">bru_nytte</td>
+</tr>
+<tr class="odd">
+<td align="left">bru_trivsel</td>
+</tr>
+<tr class="even">
+<td align="left">enslige_mindrearige</td>
+</tr>
+<tr class="odd">
+<td align="left">bosatt_anmodede</td>
+</tr>
+<tr class="even">
 <td align="left">intro_status_arbutd</td>
 </tr>
 <tr class="odd">
@@ -81,128 +208,17 @@ kable(df)</code></pre>
 <td align="left">befolkning_flytting_vreg</td>
 </tr>
 <tr class="odd">
-<td align="left">barnehagedeltakelse</td>
-</tr>
-<tr class="even">
-<td align="left">voksne_grunnskole</td>
-</tr>
-<tr class="odd">
-<td align="left">videregaende_deltakelse</td>
-</tr>
-<tr class="even">
-<td align="left">videregaende_fullfort</td>
-</tr>
-<tr class="odd">
-<td align="left">voksne_videregaende</td>
-</tr>
-<tr class="even">
-<td align="left">utdanningsniva</td>
-</tr>
-<tr class="odd">
-<td align="left">intro_tiltak_4</td>
-</tr>
-<tr class="even">
-<td align="left">intro_tiltak_12</td>
-</tr>
-<tr class="odd">
-<td align="left">intro_avslutning_direkte_3</td>
-</tr>
-<tr class="even">
-<td align="left">intro_avslutning_direkte_8</td>
-</tr>
-<tr class="odd">
-<td align="left">intro_deltakere</td>
-</tr>
-<tr class="even">
-<td align="left">befolkning_hovedgruppe</td>
-</tr>
-<tr class="odd">
-<td align="left">befolkning_verdensregion_9</td>
-</tr>
-<tr class="even">
-<td align="left">befolkning_verdensregion_3</td>
-</tr>
-<tr class="odd">
-<td align="left">befolkning_opprinnelsesland</td>
-</tr>
-<tr class="even">
-<td align="left">befolkning_alder</td>
-</tr>
-<tr class="odd">
-<td align="left">befolkning_botid</td>
-</tr>
-<tr class="even">
-<td align="left">flyktning_botid_flytting</td>
-</tr>
-<tr class="odd">
-<td align="left">befolkning_opprinnelsesland_botid</td>
-</tr>
-<tr class="even">
-<td align="left">ungdom_utenfor_opplaring</td>
-</tr>
-<tr class="odd">
 <td align="left">bosatt_befolkning</td>
 </tr>
 <tr class="even">
-<td align="left">grunnskolepoeng</td>
+<td align="left">trangboddhet</td>
 </tr>
 <tr class="odd">
-<td align="left">grunnskolepoeng_innvandrere</td>
-</tr>
-<tr class="even">
-<td align="left">sosialhjelp</td>
-</tr>
-<tr class="odd">
-<td align="left">sysselsatte_kjonn_land</td>
-</tr>
-<tr class="even">
-<td align="left">sysselsatte_innvandringsgrunn</td>
-</tr>
-<tr class="odd">
-<td align="left">sysselsatte_botid_land</td>
-</tr>
-<tr class="even">
-<td align="left">sysselsatte_innvkat_alder</td>
-</tr>
-<tr class="odd">
-<td align="left">sysselsatte_botid</td>
-</tr>
-<tr class="even">
-<td align="left">ikke_arbutd_innvkat_land</td>
-</tr>
-<tr class="odd">
-<td align="left">ikke_arbutd_innvkat_alder</td>
-</tr>
-<tr class="even">
-<td align="left">arbledige_innvkat_land</td>
-</tr>
-<tr class="odd">
-<td align="left">sysselsatte_innvkat</td>
-</tr>
-<tr class="even">
-<td align="left">tilskudd</td>
-</tr>
-<tr class="odd">
-<td align="left">bosatt_anmodede</td>
-</tr>
-<tr class="even">
-<td align="left">enslige_mindrearige</td>
-</tr>
-<tr class="odd">
-<td align="left">befolkning_innvandringsgrunn</td>
-</tr>
-<tr class="even">
-<td align="left">sysselsatte_land</td>
-</tr>
-<tr class="odd">
-<td align="left">vedvarende_lavinntekt</td>
-</tr>
-<tr class="even">
-<td align="left">gjennomsnittsinntekt</td>
+<td align="left">eierstatus</td>
 </tr>
 </tbody>
 </table>
-<p>APIet gir p.t. tilgang til 50 datasett</p>
+<p>APIet gir p.t. tilgang til 50 datasett.</p>
 </div>
 <div id="metadata-2---headere" class="section level3">
 <h3>Metadata 2 - headere</h3>
@@ -226,7 +242,7 @@ kable(df$headers)</code></pre>
 <td align="left">aar</td>
 </tr>
 <tr class="even">
-<td align="left">bydelNr</td>
+<td align="left">fylkeNr</td>
 </tr>
 <tr class="odd">
 <td align="left">innvkat3</td>
@@ -244,13 +260,13 @@ kable(df$headers)</code></pre>
 <td align="left">tabellvariabel</td>
 </tr>
 <tr class="even">
-<td align="left">fylkeNr</td>
+<td align="left">bydelNr</td>
 </tr>
 <tr class="odd">
-<td align="left">kommuneNr</td>
+<td align="left">naringsregionNr</td>
 </tr>
 <tr class="even">
-<td align="left">naringsregionNr</td>
+<td align="left">kommuneNr</td>
 </tr>
 </tbody>
 </table>
@@ -269,20 +285,20 @@ df = fromJSON(content(test_tabeller,&quot;text&quot;,encoding=&quot;UTF-8&quot;)
 str(df)</code></pre>
 <pre><code>## &#39;data.frame&#39;:    4 obs. of  9 variables:
 ##  $ aar            :List of 4
-##   ..$ : chr  &quot;2018&quot; &quot;2006&quot; &quot;2007&quot; &quot;2008&quot; ...
-##   ..$ : chr  &quot;2018&quot; &quot;2006&quot; &quot;2007&quot; &quot;2008&quot; ...
-##   ..$ : chr  &quot;2018&quot; &quot;2006&quot; &quot;2007&quot; &quot;2008&quot; ...
-##   ..$ : chr  &quot;2018&quot; &quot;2006&quot; &quot;2007&quot; &quot;2008&quot; ...
-##  $ bydelNr        :List of 4
-##   ..$ : chr  &quot;030101&quot; &quot;030102&quot; &quot;030103&quot; &quot;030104&quot; ...
+##   ..$ : chr  &quot;2021&quot; &quot;2020&quot; &quot;2019&quot; &quot;2017&quot; ...
+##   ..$ : chr  &quot;2021&quot; &quot;2020&quot; &quot;2019&quot; &quot;2017&quot; ...
+##   ..$ : chr  &quot;2021&quot; &quot;2020&quot; &quot;2019&quot; &quot;2017&quot; ...
+##   ..$ : chr  &quot;2021&quot; &quot;2020&quot; &quot;2019&quot; &quot;2017&quot; ...
+##  $ fylkeNr        :List of 4
+##   ..$ : chr  &quot;00&quot; &quot;03&quot; &quot;11&quot; &quot;15&quot; ...
 ##   ..$ : NULL
 ##   ..$ : NULL
 ##   ..$ : NULL
 ##  $ innvkat3       :List of 4
-##   ..$ : chr  &quot;alle&quot; &quot;innvandrere&quot; &quot;befolkningen_ellers&quot;
-##   ..$ : chr  &quot;alle&quot; &quot;innvandrere&quot; &quot;befolkningen_ellers&quot;
-##   ..$ : chr  &quot;alle&quot; &quot;innvandrere&quot; &quot;befolkningen_ellers&quot;
-##   ..$ : chr  &quot;alle&quot; &quot;innvandrere&quot; &quot;befolkningen_ellers&quot;
+##   ..$ : chr  &quot;alle&quot; &quot;innvandrere&quot; &quot;befolkningen_ellers&quot; &quot;norskfodte_m_innvf&quot; ...
+##   ..$ : chr  &quot;alle&quot; &quot;innvandrere&quot; &quot;befolkningen_ellers&quot; &quot;norskfodte_m_innvf&quot; ...
+##   ..$ : chr  &quot;alle&quot; &quot;innvandrere&quot; &quot;befolkningen_ellers&quot; &quot;norskfodte_m_innvf&quot; ...
+##   ..$ : chr  &quot;alle&quot; &quot;innvandrere&quot; &quot;befolkningen_ellers&quot; &quot;norskfodte_m_innvf&quot; ...
 ##  $ kjonn          :List of 4
 ##   ..$ : chr  &quot;alle&quot; &quot;1&quot; &quot;0&quot;
 ##   ..$ : chr  &quot;alle&quot; &quot;1&quot; &quot;0&quot;
@@ -298,24 +314,24 @@ str(df)</code></pre>
 ##   ..$ : chr &quot;personer&quot;
 ##   ..$ : chr &quot;personer&quot;
 ##   ..$ : chr &quot;personer&quot;
-##  $ fylkeNr        :List of 4
+##  $ bydelNr        :List of 4
 ##   ..$ : NULL
-##   ..$ : chr  &quot;00&quot; &quot;01&quot; &quot;02&quot; &quot;03&quot; ...
+##   ..$ : chr  &quot;030101&quot; &quot;030102&quot; &quot;030103&quot; &quot;030104&quot; ...
 ##   ..$ : NULL
-##   ..$ : NULL
-##  $ kommuneNr      :List of 4
-##   ..$ : NULL
-##   ..$ : NULL
-##   ..$ : chr  &quot;0101&quot; &quot;0104&quot; &quot;0105&quot; &quot;0106&quot; ...
 ##   ..$ : NULL
 ##  $ naringsregionNr:List of 4
 ##   ..$ : NULL
 ##   ..$ : NULL
+##   ..$ : chr  &quot;3001&quot; &quot;3002&quot; &quot;3003&quot; &quot;3004&quot; ...
 ##   ..$ : NULL
-##   ..$ : chr  &quot;3001&quot; &quot;3002&quot; &quot;3003&quot; &quot;3004&quot; ...</code></pre>
+##  $ kommuneNr      :List of 4
+##   ..$ : NULL
+##   ..$ : NULL
+##   ..$ : NULL
+##   ..$ : chr  &quot;0301&quot; &quot;1101&quot; &quot;1103&quot; &quot;1106&quot; ...</code></pre>
 <p>For de 9 variablene (Variabelen tabellvariabel er standard for alle) har man 4 ulike kombinasjoner, eller grupper: en med bydelNr, en med fylkeNr, en med kommuneNr, og en med naringsregionNr.</p>
 </div>
-<div id="faktiske-data---en-grunnleggende-sprring" class="section level3">
+<div id="faktiske-data---en-grunnleggende-spørring" class="section level3">
 <h3>Faktiske data - en grunnleggende spørring</h3>
 <p>Så til den faktiske data-spørringen. Den sendes med å poste en spørring til en nettadresse. Spørringen er formatert som JSON, det samme som utformatet tilbake.</p>
 <p>Spørringa inkluderer</p>
@@ -351,7 +367,7 @@ head(df)</code></pre>
 ## 5 2015      00   norskfodte_m_innvf  alle personer         135583
 ## 6 2015      00 bef_u_innv_og_norskf  alle personer        4360839</code></pre>
 </div>
-<div id="faktiske-data---sprring-for-mer-enn-500-svar" class="section level3">
+<div id="faktiske-data---spørring-for-mer-enn-500-svar" class="section level3">
 <h3>Faktiske data - spørring for mer enn 500 svar</h3>
 <p>Hvis APIet gir mer enn 500 svar tilbake, får en med en continuation-token, som må håndteres. Her er en funksjon som ser ut til å gjøre det greit.</p>
 <pre class="r"><code>imdi_fetch_example = function(data){
@@ -386,7 +402,7 @@ head(df)</code></pre>
   return(temp_df_final)
 }</code></pre>
 </div>
-<div id="faktiske-data---sammenlikningssprringer" class="section level3">
+<div id="faktiske-data---sammenlikningsspørringer" class="section level3">
 <h3>Faktiske data - sammenlikningsspørringer</h3>
 <p>På (…)/api/v1/data/compare kan man sende inn en spørring basert på en tabell og en headergruppe. Endpointet brukes med å POSTe en spørring på forhåndsdefinert format til webserveren. Da inkluderes Compare som en verdi i spørringa, og fjernes Include, slik:</p>
 <pre class="r"><code>url = &quot;https://imdifakta.azurewebsites.net/api/v1/data/compare&quot;
@@ -407,36 +423,26 @@ data =
 test = POST(url,body=data,encode=&quot;json&quot;,verbose(),content_type_json())</code></pre>
 <pre class="r"><code>df = fromJSON(content(test,&quot;text&quot;,encoding=&quot;UTF-8&quot;))[[1]]
 head(df)</code></pre>
-<pre><code>##    aar fylkeNr             innvkat5 kjonn    enhet tabellvariabel
-## 1 2017      00          innvandrere  alle personer         724987
-## 2 2017      00   norskfodte_m_innvf  alle personer         158764
-## 3 2017      00 bef_u_innv_og_norskf  alle personer        4374566
-## 4 2017    &lt;NA&gt;          innvandrere  alle personer           3425
-## 5 2017    &lt;NA&gt;   norskfodte_m_innvf  alle personer            939
-## 6 2017    &lt;NA&gt; bef_u_innv_og_norskf  alle personer          26426
-##   kommuneNr
-## 1      &lt;NA&gt;
-## 2      &lt;NA&gt;
-## 3      &lt;NA&gt;
-## 4      0101
-## 5      0101
-## 6      0101</code></pre>
+<pre><code>##    aar fylkeNr             innvkat5 kjonn    enhet tabellvariabel kommuneNr
+## 1 2017      00          innvandrere  alle personer         724987      &lt;NA&gt;
+## 2 2017      00   norskfodte_m_innvf  alle personer         158764      &lt;NA&gt;
+## 3 2017      00 bef_u_innv_og_norskf  alle personer        4374566      &lt;NA&gt;
+## 4 2017    &lt;NA&gt;          innvandrere  alle personer           3425      3001
+## 5 2017    &lt;NA&gt;   norskfodte_m_innvf  alle personer            939      3001
+## 6 2017    &lt;NA&gt; bef_u_innv_og_norskf  alle personer          26426      3001</code></pre>
 <p>Compare kan også ha med kun 1 verdi, f.eks. kommuneNr - men kan ta maksimalt 100 verdier.</p>
-</div>
-<div id="faktiske-data---en-sprring-for-a-fa-ut-alt-i-en-tabell" class="section level3">
-<h3>Faktiske data - en spørring for å få ut alt i en tabell</h3>
-<p>Det kan også være nyttig å hente ut en hel tabell, uten å måtte gå omveien om å kjenne til headergrupper, variabler, verdier og formatering av spørring. Med byggeklossene fra lenger opp kan en få til det.</p>
+<p>###Faktiske data - en spørring for å få ut alt i en tabell
+Det kan også være nyttig å hente ut en hel tabell, uten å måtte gå omveien om å kjenne til headergrupper, variabler, verdier og formatering av spørring. Med byggeklossene fra lenger opp kan en få til det.</p>
 <p>Det som hadde vært enda nyttigere, var om denne spørringa ga deg en advarsel om hvor lang tid det kom til å ta - for mange av tabellene er veldig store, og med maks 500 celler ut for hver spørring og 5 sek. pause mellom hver spørring blir det fort litt ventetid. Den første standard-forsøket med bosatt_anmodede har ca 20 år x 3 bosettingsverdier x 2 enheter x 430 kommuner = minst 90 spørringer = 10 minutter.</p>
 <p>Det tilsier vel egentlig at en likegodt kan hente ut dataene en skal bruke, og ikke alle dataene. I begge disse eksemplene her må en først velge vekk noe, før en kan vise noe annet.</p>
-<pre><code>## Warning in evalq(as.numeric(tabellvariabel), &lt;environment&gt;): NAs introduced
-## by coercion</code></pre>
-<pre><code>## Warning: Removed 17 rows containing missing values (geom_path).</code></pre>
-<p><img src="/post/2019-03-24-noen-eksempler-på-bruk-av-imdis-api_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
-<pre><code>## Warning in evalq(as.numeric(tabellvariabel), &lt;environment&gt;): NAs introduced
-## by coercion</code></pre>
-<pre><code>## Warning: Removed 4140 rows containing non-finite values (stat_boxplot).</code></pre>
-<pre><code>## Warning: Removed 4140 rows containing missing values (geom_point).</code></pre>
-<p><img src="/post/2019-03-24-noen-eksempler-på-bruk-av-imdis-api_files/figure-html/unnamed-chunk-10-1.png" width="576" /></p>
+<pre><code>## Warning in mask$eval_all_mutate(quo): NAs introduced by coercion</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;aar&#39;. You can override using the `.groups` argument.</code></pre>
+<pre><code>## Warning: Removed 17 row(s) containing missing values (geom_path).</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre><code>## Warning in mask$eval_all_mutate(quo): NAs introduced by coercion</code></pre>
+<pre><code>## Warning: Removed 4498 rows containing non-finite values (stat_boxplot).</code></pre>
+<pre><code>## Warning: Removed 4498 rows containing missing values (geom_point).</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="576" /></p>
 </div>
 </div>
 <div id="lisens" class="section level2">
@@ -448,7 +454,13 @@ head(df)</code></pre>
 <li>å kopiere og tilgjengeliggjøre en endret eller sammensatt versjon</li>
 <li>å benytte datasettet kommersielt</li>
 </ul>
-<p>På følgende vilkår: - at du navngir lisensgiver slik lisensgiver ber om, men ikke på en måte som indikerer at disse har godkjent eller anbefaler deg eller din bruk av datasettet - at du ikke bruker dataene på en måte som fremstår som villedende, og heller ikke fordreier eller uriktig fremstiller dataene</p>
-<p>Med den forståelse: - at data som inneholder personopplysninger og er taushetsbelagt ikke er omfattet av denne lisensen og ikke kan viderebrukes - at lisensgiver fraskriver seg ethvert ansvar for informasjonens kvalitet og hva informasjonen brukes til</p>
-<p>Norsk lisens for offentlige data (NLOD) er tilgjengelig både på norsk og på engelsk. Følg disse lenkene for å lese den juridiske lisensteksten: <a href="https://data.norge.no/nlod/no/2.0">Norsk lisens for offentlige data (NLOD):</a> <a href="https://data.norge.no/nlod/en/1.0">Norwegian Licence for Open Government Data (NLOD):</a></p>
+<p>På følgende vilkår:
+- at du navngir lisensgiver slik lisensgiver ber om, men ikke på en måte som indikerer at disse har godkjent eller anbefaler deg eller din bruk av datasettet
+- at du ikke bruker dataene på en måte som fremstår som villedende, og heller ikke fordreier eller uriktig fremstiller dataene</p>
+<p>Med den forståelse:
+- at data som inneholder personopplysninger og er taushetsbelagt ikke er omfattet av denne lisensen og ikke kan viderebrukes
+- at lisensgiver fraskriver seg ethvert ansvar for informasjonens kvalitet og hva informasjonen brukes til</p>
+<p>Norsk lisens for offentlige data (NLOD) er tilgjengelig både på norsk og på engelsk. Følg disse lenkene for å lese den juridiske lisensteksten:
+<a href="https://data.norge.no/nlod/no/2.0">Norsk lisens for offentlige data (NLOD):</a>
+<a href="https://data.norge.no/nlod/en/1.0">Norwegian Licence for Open Government Data (NLOD):</a></p>
 </div>
