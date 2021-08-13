@@ -5,7 +5,7 @@ date: '2021-05-21'
 slug: []
 categories: []
 tags: []
-draft: true
+draft: false
 ---
 
 __Hva handler dette om?__ _Det er på tide med Eurovision! Glam, glitter og pappmusikk - og en anledning til å ha en liten konkurranse, og lære litt om statistikk for rankinger_
@@ -21,12 +21,14 @@ library(readxl)
 library(here)
 ```
 
-Resultatene hentes fra [Eurovisionworld.com](https://eurovisionworld.com/eurovision/2021). Deltakelsen i tippekonkurransen ble henta inn i Easyfact, og er anonymisert.
+Resultatene hentes fra [Eurovisionworld.com](https://eurovisionworld.com/eurovision/2021). Deltakelsen i tippekonkurransen ble henta inn i Easyfact, og er anonymisert. 
 
-```{r, include = FALSE}
+Her har jeg også tatt i bruk read_excel-funksjonen fra readxl-pakka. Tidligere har jeg hatt et svare strev med å importere excel-filer til R. Derfor har jeg alltid konvertert data til csv-format for import. Men denne funksjonen ser ut til å funke veldig bra nå. 
+
+```{r, echo = FALSE}
 #data
-df <- read_excel(here("content/data/pivotert_deltakere_analyse.xlsx"))
-resultater <- read_excel(here("content/data/mgp_resultater_2021.xlsx"))
+df <- read_excel("pivotert_deltakere_analyse.xlsx")
+resultater <- read_excel("mgp_resultater_2021.xlsx")
 
 ```
 

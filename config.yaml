@@ -22,7 +22,7 @@ params:
     - python
     - stan
   progressively: no
-  sitename: Suppe og analyse - test
+  sitename: Suppe og analyse
   uselatex: yes
 markup:
   goldmark:
