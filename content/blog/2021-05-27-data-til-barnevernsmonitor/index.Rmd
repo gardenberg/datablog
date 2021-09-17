@@ -1,11 +1,119 @@
 ---
-title: Data til barnevernsmonitor
+title: 'Lærdommer om dataflyt for barnevernsmonitor'
 author: Eivind
 date: '2021-05-27'
 slug: []
 categories: []
 tags: []
-draft: true
+draft: false
 ---
 
-__Hva handler dette om?__ _En kjapp kikk på hvordan jeg har laget en dataflyt-kodegreia for å hente data til en monitor for barnevernet_ 
+__Hva handler dette om?__ _En kjapp kikk på hvordan jeg har laget en dataflyt-kodegreie for å hente data til en monitor for barnevernet_ 
+
+Du kjenner kanskje gleden ved å skulle gå i gang med et nytt prosjekt på et nytt område, hvor det er et flott datasett du har hørt skal være bra - og som du tror at du kan gjøre noe lurt med for å få ut noen saftige funn sjefene vil elske. Men når du så setter deg ned, skjønner du at datasettet henger sammen med gaffateip og binders - det kommer fra mange ulike kilder, koblingsnøklene mangler, hvilke transformasjoner som er gjort er ikke opplagt. Når du prøver å legge til en ny årgang, er det ingenting som stemmer, for alle enhetene får dramatiske endringer. Igjen bruker du mesteparten av prosjekttida på transformering og lagring. 
+
+Dette er jo en kjent historie. Ofte - for min del - er slutten på visa at jeg gjør ting så fort jeg kan, og velger pragmatiske løsninger for å få dataene til å passe sammen og passe til behovet. Uten å dokumentere. Og dermed sitter jeg igjen med samme problem neste gang det skal gjøres, for framtids-meg husker ikke veldig godt detaljene i slike valg. 
+
+I mange tilfeller kan det være helt greit - for det tar definitivt tid å dokumentere og systematisere en dataflyt, og det er ikke sikkert at det lønner seg. Men hvis det er et datasett som skal vedlikeholdes over tid, som består av flere ulike kilder, kan det etter hvert dukke opp et slikt behov.
+
+I Bufdir fikk jeg muligheten til å gjøre nettopp et slikt prosjekt. På Bufdirs nettsider ligger en [kommunemonitor for barnevernet](https://bufdir.no/Statistikk_og_analyse/Barnevern_kommunemonitor/). Morsomt nok er den inspirert av IMDi sin Ifakta-nettside. Her finner du 25 indikatorer for kommuner, med bakgrunnsinformasjon og indikatorer kapasitet, kvalitet og økonomi i det kommunale barnevernet. Disse indikatorene er igjen konstruert på bakgrunn av rundt 50 tabeller, og et sett med metadata / dimensjonstabeller, hovedsaklig om geografi.
+ Koden til versjonen jeg lagde ligger på [GitHub her](https://github.com/gardenberg/barnevernmonitor).
+
+```{r}
+library(PxWebApiData)
+library(klassR)
+suppressPackageStartupMessages(library(tidyverse))
+```
+
+
+Når jeg lagde en dataflyt for denne nettsida, var det særlig viktig å:
+
+*1. få kontroll på enhetene vi skulle observere (bydeler, kommuner, interkommunale samarbeid, fylker og hele landet). Hvem har masterkodelistene for disse, og hvordan sikrer vi at vi får oppdatert våre lister ved endringer i enhetsstrukturen?*
+
+En helt sentral byggekloss i monitoren, er settet med enheter en skal vise informasjon om, og hvordan det er kodet. Monitoren skal vise data for hele Norge, for alle fylkene, for alle kommuner, for interkommunale samarbeid på barnevernsområdet og for bydelene i de største byene. Dermed trenger en et oppdatert maskinlesbart kodesett for disse enhetene. For de fleste enhetene kan en bruke SSBs flotte listesystem.
+
+```{r}
+bydelsklasse = GetKlass(103)
+kommuneklasse = GetKlass(131)
+fylkesklasse = GetKlass(104)
+
+#disse er like, så de kan radbindes sammen til settet med gjeldende enheter
+
+enheter = bind_rows(bydelsklasse, kommuneklasse, fylkesklasse)
+
+rm(bydelsklasse, kommuneklasse, fylkesklasse)
+
+head(enheter)
+```
+
+*2. ta utgangspunkt i det de fleste brukerne trenger, og begyn med det. I dette tilfellet trenger de fleste av brukerne informasjon om sin geografiske enhet i dag, og historikken for denne. At kommunen har blitt sammenslått bakover i tid, er i de fleste tilfeller ikke viktig - de vil bare ha tallene.*
+
+En helt sentral utfordring her var kommunesammenslåingene som er gjort de seinere åra, og da særlig 1. januar 2020. Vi endte opp med å lage sammenslåtte tidsserier for alle, unntatt kommunene som ble delt. Dette vil nok dukke opp som et problem også i framtida, med Senterpartiet i regjering kan en vel regne med at noen sammenslåinger blir reversert. 
+
+Vi gjorde dette stort sett manuelt, men SSB viste oss hvordan vi kunne bruke KlassR til å gjøre det også:
+
+```{r}
+# Hent endringer i klassifikasjon
+region_klass <- GetKlass(131, date = c("2018-01-01", "2020-01-01"),
+                         correspond = T)
+
+head(region_klass)
+
+```
+
+*3. sørg for å ha en mulighet til å dekke spesielle behov, hvis de dukker opp. Noen "power-users" trenger mer spesialiserte data, som f.eks. data som ikke er blitt mappet til dagens kommunestruktur. Da bør det være lett tilgjengelig, for glade power-users er gode ambassadører for systemet ditt.*
+
+*4. kartlegge kildene og hvilke data som var hentet derfra. Det tok faktisk litt tid å finne ut av hvilke variabler som skulle hentes. Et API-kall som dokumentasjon er forhåpentligvis fint.*
+
+Etter å ha kartlagt alle kildene, vel 60 av dem, så vi at de aller fleste kunne hentes fra SSBs åpne API til statistikkbanken. Vi lagde to script, inndelt etter når dataene oppdateres. Siden det er snakk om vel 60 tabeller, la vi også inn litt enkel logging, slik at vi kunne se om alt hadde gått som forventa uten å måtte følge med på alle API-kallene.
+
+Dette så da omtrent slik ut:
+
+```{r}
+#kommuner
+#12275: Barn med tiltak i løpet av året og per 31. desember, etter region, alder, funksjon, statistikkvariabel og år
+#statbank: https://www.ssb.no/statbank/table/12275/tableViewLayout1/
+#metadata: https://data.ssb.no/api/v0/no/console/meta/table/12275/
+
+tabell_2_kommune = ApiData(
+  urlToData = "https://data.ssb.no/api/v0/no/table/12275",
+  KOKkommuneregion0000 = TRUE,
+  KOKalder0000 = "F000-017",
+  KOKbvfunksjon0000 = "0",
+  ContentsCode = "KOSbvbarntiltaka0000",
+  Tid = TRUE
+)
+
+#kommenterer ut logging og slikt nedover
+
+#tabell_2_kommune = tabell_2_kommune$dataset
+#write.csv2(tabell_2_kommune, "datauttrekk_raw/tabell_2_kommune.csv", row.names = FALSE)
+
+#temp_logg = bind_rows(temp_logg, data.frame(
+#  tabell = "tabell_2_kommune",
+#  antall_observasjoner = nrow(tabell_2_kommune),
+#  siste_år = max(parse_number(tabell_2_kommune$Tid))
+#))
+#rm(tabell_2_kommune)
+
+#siden det ble gjort en 60 kall mot API-et, støtte vi på grensen deres. Derfor hadde vi et lite ventetidsrom her.
+#Sys.sleep(waiting_time)
+
+
+head(tabell_2_kommune$dataset)
+
+```
+
+*5. transformeringer må tas for seg, og krever mye tid og mange iterasjoner for å få til på en god måte. Her er det viktig med god dokumentasjon fra dag 1, og en frisk kode. Tidyverse-piping over lange distanser er f.eks. ikke nødvendigvis så bra som du tror.*
+
+Det mest tidkrevende, var å lage en god struktur på bearbeidinga. Selv om mange av tabellene kom fra SSB, hadde de ymse struktur og koding. Totalt sett var det vel en 30-40 ulike operasjoner som kunne bli kjørt eller ikke, hvis en også tok med dataene fra andre kilder. 
+
+Vi begynte derfor med å lage ett script per ferdig tabell. Dette kunne nok raskt ha blitt generalisert mer, med noen gode funksjoner eller metoder/objekter.
+
+Her lærte vi også fort at rekkefølgen som en kjørte disse scriptene i, hadde betydning. Mange av indikatorene er beregnet på bakgrunn av antall barn i kommunen. Dataene om antall barn i kommunen må derfor oppdateres først, før en kan oppdatere noe annet. 
+
+
+
+
+
+
