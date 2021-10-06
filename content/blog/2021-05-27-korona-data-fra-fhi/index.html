@@ -1,0 +1,264 @@
+---
+title: Korona-data fra FHI
+author: Eivind
+date: '2021-09-27'
+slug: []
+categories: []
+tags: []
+draft: false
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+
+<p><strong>Hva handler dette om?</strong> <em>En titt på hvordan en kan hente data om koronatilfeller fra <a href="https://statistikk.fhi.no/msis/sykdomshendelser?etter=diagnose&amp;fordeltPaa=maaned&amp;diagnose=713">FHIs MSIS-nettside</a></em></p>
+<p>Å kartlegge situasjonen i kommunalt barnevern har vært en av oppgavene jeg har hatt i Bufdir. Et stadiig tilbakevendende spørsmål vi har fått er hvordan smittetall og smittetrykk påvirker situasjonen. For å få noen grove tall på dette, har vi brukt FHIs åpne data om rapporterte tilfeller i meldingssystemet for smittsomme sykdommer.</p>
+<div id="vi-bruker-fhis-api" class="section level1">
+<h1>Vi bruker FHIs API!</h1>
+<p>På <a href="https://statistikk.fhi.no/msis/sykdomshendelser?etter=diagnose&amp;fordeltPaa=provedato&amp;diagnose=713&amp;fraDato=2020-02-21&amp;tilDato=2021-09-26">FHIs nettside</a> publiseres innmeldte, påviste tilfeller av Covid-19 per måned, men oppdatert pr. dags dato. Det er mulig å fordele dataene blant annet på geografi.</p>
+<p>For å kunne bruke disse dataene i analyser, er det kjekt å få dem lasta ned på et anna format. En liten kikk i konsollet avslører at dataene som vi er ute etter kommer fra et API. For å bruke API-et trenger vi egentlig bare å hente kodelista som FHI bruker for fylker og kommuner, og så bruke den til å lage en fryktelig lang URL.</p>
+<pre class="r"><code>#hent kodeverk for fylker og kommuner
+url = &quot;https://statistikk.fhi.no/api/msis/kodeverk/fylkerOgKommuner&quot;
+query_result = GET(url)</code></pre>
+<div id="litt-rot-i-metadataene" class="section level2">
+<h2>Litt rot i metadataene…</h2>
+<p>Lista med enheter som kommer ned er heller rotete, og har uhensiktsmessige navn, så den må repareres og fikses litt.</p>
+<pre class="r"><code>enhetsliste = unnest(fromJSON(content(query_result,&quot;text&quot;,encoding=&quot;UTF-8&quot;)), cols = kommuneListe, names_repair = &quot;universal&quot;) %&gt;%
+  rename(fhi_kid = id...2,
+         knr = verdi...3,
+         knavn = beskrivelse...4,
+         fhi_fid = id...5,
+         fnr = verdi...6,
+         fnavn = beskrivelse...7
+         ) %&gt;%
+  select(-bydelListe)</code></pre>
+<pre><code>## New names:
+## * id -&gt; id...2
+## * verdi -&gt; verdi...3
+## * beskrivelse -&gt; beskrivelse...4
+## * id -&gt; id...5
+## * verdi -&gt; verdi...6
+## * ...</code></pre>
+<pre class="r"><code>head(enhetsliste)</code></pre>
+<pre><code>## # A tibble: 6 x 6
+##   fhi_kid knr   knavn           fhi_fid fnr   fnavn
+##     &lt;int&gt; &lt;chr&gt; &lt;chr&gt;             &lt;int&gt; &lt;chr&gt; &lt;chr&gt;
+## 1  141983 4203  Arendal            5027 42    Agder
+## 2  142011 4216  Birkenes           5027 42    Agder
+## 3  142020 4220  Bygland            5027 42    Agder
+## 4  142023 4222  Bykle              5027 42    Agder
+## 5  142018 4219  Evje og Hornnes    5027 42    Agder
+## 6  141989 4206  Farsund            5027 42    Agder</code></pre>
+<p>Interessant nok har lista med enheter 358 observasjoner, 2 flere enn det er kommuner i Norge i dag. En av dem er 9999 - ukjent kommune, som er greit nok, men den siste? Jeg klarer ikke å plukke den ut i farta.</p>
+</div>
+<div id="vi-lager-en-enkel-spørring" class="section level2">
+<h2>Vi lager en enkel spørring!</h2>
+<p>Uansett - videre til de faktiske dataene! Disse finner du på endepunktet etterDiagnoseFordeltPaaMaaned, som tar en hel haug med parametre. Det vi er interessert i er parametrene:</p>
+<ul>
+<li>fraAar. Bør settes til 2021, for å få riktig år. Hvis du bruker fra 2020 til 2021, så summeres dataene for månedene med overlapp, noe du neppe har lyst til.</li>
+<li>kommuneKodeListe. Her kan du sette inn kommunenummeret, f.eks. 3411.</li>
+</ul>
+<pre class="r"><code>#spørremetode
+temp_url = &quot;https://statistikk.fhi.no/api/msis/etterDiagnoseFordeltPaaMaaned?fraAar=2021&amp;tilAar=2021&amp;diagnoseKodeListe=713&amp;kommuneKodeListe=3411&amp;summerDiagnose=false&amp;summerAlder=false&amp;summerKjonn=false&amp;summerGeografi=false&amp;summerSmittested=false&amp;summerSmittemaate=false&amp;summerMaaned=false&quot;
+
+query_result = GET(temp_url)
+resultater = fromJSON(content(query_result,&quot;text&quot;,encoding=&quot;UTF-8&quot;))
+
+#legger til en numerisk månedsverdi
+resultater = mutate(resultater,
+                    mnd = seq_along(fordeltPaa)
+                    )
+
+#lager en egen dataframe med måned-nr for seinere bruk...
+df_mnd = select(resultater,fordeltPaa, mnd)
+
+#så lager vi et enkelt plott
+ggplot(data = resultater) +
+  geom_col(aes(x = fct_reorder(fordeltPaa, mnd), y = antall)) +
+  labs(x = &quot;måned&quot;, y = &quot;antall smittetilfeller&quot;, title = &quot;Antall påviste covid-19-tilfeller i Ringsaker, per måned (t.o.m. september)&quot;, subtitle = &quot;Kilde: FHI, MSIS (27.9.2021)&quot;) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>
+<div id="for-loop-for-å-spørre-om-alt" class="section level2">
+<h2>For-loop for å spørre om alt!</h2>
+<p>Dette er ikke spesielt anvendelig om du ønsker alle dataene for alle kommunene. Derfor er det greit å lage en funksjon, som bygger URL-en for deg, og tar kommunenummeret som input:</p>
+<pre class="r"><code>kommune_query_builder = function(kommunenr = &quot;4216&quot;){
+  temp_url = paste0(
+    &quot;https://statistikk.fhi.no/api/msis/etterDiagnoseFordeltPaaMaaned?&quot;,
+    &quot;fraAar=2021&amp;tilAar=2021&amp;&quot;,
+    &quot;diagnoseKodeListe=713&amp;&quot;,
+    &quot;kommuneKodeListe=&quot;,
+      kommunenr,
+    &quot;&amp;&quot;,
+    &quot;summerDiagnose=false&amp;summerAlder=false&amp;summerKjonn=false&amp;summerGeografi=false&amp;summerSmittested=false&amp;summerSmittemaate=false&amp;summerMaaned=false&quot;
+    )
+}</code></pre>
+<p>Denne kan vi så kjøre, f.eks. inne i en for-loop, ved å hente kommunenummeret fra den tidligere oppsatte kommunenummer-lista:</p>
+<pre class="r"><code>enhetsliste = select(enhetsliste, knr, knavn, fnr)
+smittetall = data.frame()
+
+for(i in 1:nrow(enhetsliste)){
+  temp_query = kommune_query_builder(enhetsliste$knr[i])
+  temp_result = fromJSON(content(GET(temp_query),&quot;text&quot;,encoding=&quot;UTF-8&quot;))
+  if(length(temp_result)&gt;0){
+    temp_result = bind_cols(enhetsliste[i,], temp_result)
+    smittetall = bind_rows(smittetall, temp_result)
+  }
+  Sys.sleep(1.5)
+}
+
+#legger på månedsnummeret
+
+smittetall = left_join(smittetall, df_mnd, by = &quot;fordeltPaa&quot;)
+
+head(smittetall)</code></pre>
+<pre><code>##    knr   knavn fnr                                      tekst antall fordeltPaa
+## 1 4203 Arendal  42 Koronavirus med utbruddspotensial, Arendal     26     Januar
+## 2 4203 Arendal  42 Koronavirus med utbruddspotensial, Arendal     49    Februar
+## 3 4203 Arendal  42 Koronavirus med utbruddspotensial, Arendal     70       Mars
+## 4 4203 Arendal  42 Koronavirus med utbruddspotensial, Arendal    100      April
+## 5 4203 Arendal  42 Koronavirus med utbruddspotensial, Arendal     70        Mai
+## 6 4203 Arendal  42 Koronavirus med utbruddspotensial, Arendal     88       Juni
+##   mnd
+## 1   1
+## 2   2
+## 3   3
+## 4   4
+## 5   5
+## 6   6</code></pre>
+</div>
+<div id="fyller-inn-manglende-data" class="section level2">
+<h2>Fyller inn manglende data</h2>
+<p>Dermed har vi et datasett som viser smittetallene for alle norske kommuner, totalt for de første 8 og trekvart månedene i 2021. Skjønt - ikke alle kommuner. Litt enkel matte tilsier at det burde være 12 * 358 = 4 296 observasjoner her hvis alle kommuner og alle måneder var med. Men det er kun 4 224. Så antakeligvis mangler det en del observasjoner for kommuner som av ulike grunner ikke har rapportert, eller ikke har tilfeller.</p>
+<p>Vi lager derfor en enkel dataframe som har alle kommuner og alle måneder:</p>
+<pre class="r"><code>df_komplett = bind_rows(enhetsliste, df_mnd) %&gt;%
+  expand(., nesting(knr, knavn, fnr), nesting(fordeltPaa, mnd)) %&gt;%
+  filter(is.na(knr) == FALSE &amp; is.na(fordeltPaa) == FALSE)
+
+df_komplett = left_join(df_komplett, smittetall)</code></pre>
+<pre><code>## Joining, by = c(&quot;knr&quot;, &quot;knavn&quot;, &quot;fnr&quot;, &quot;fordeltPaa&quot;, &quot;mnd&quot;)</code></pre>
+<pre class="r"><code>#tar en liten sjekk av at alle tilfellene ble med over
+sjekksum_1 = sum(smittetall$antall)
+sjekksum_2 = sum(df_komplett$antall, na.rm = TRUE)</code></pre>
+<p>Her har vi nå NA-verdier for kommuner som det ikke fantes data for hos FHI. Vi vet ikke om disse manglet data fordi de hadde 0 tilfeller, eller fordi de ikke rakk å rapportere (Aftenposten hadde en <a href="https://www.aftenposten.no/norge/i/9OEmzl/slik-svikter-norges-overvaaking-av-pandemien-viktige-data-kommer-ikke">sak i november 2020</a> om hvor krevende det var for helsepersonell å rapportere tilfeller til MSIS).</p>
+<p>Vi begrenser også datautvalget til data fra januar til og med september 2021.</p>
+<pre class="r"><code>df_komplett = filter(df_komplett, mnd &lt; 10)</code></pre>
+</div>
+</div>
+<div id="litt-enkel-beskrivende-statistikk-om-covid-situasjonen-fra-januar-til-september" class="section level1">
+<h1>Litt enkel beskrivende statistikk om Covid-situasjonen fra januar til september</h1>
+<p>Totalt dreier det seg om 139 518 tilfeller av Covid-19 i disse 9 månedene. Når vi summerer etter måned, ser vi at antall tilfeller er størst i september. Dette er en god indikasjon på hvorfor prøvesvarene er en dårlig indikator på hvor farlig pandemien er og var aleine - etter som flere og flere får vaksine, vil andelen personer som blir alvorlig sjuke, gå ned blant de smitta.</p>
+<pre class="r"><code>sum(df_komplett$antall, na.rm = TRUE)</code></pre>
+<pre><code>## [1] 139518</code></pre>
+<pre class="r"><code>temp = group_by(df_komplett, mnd) %&gt;%
+  summarise(antall = sum(antall, na.rm = TRUE)) %&gt;%
+  left_join(., df_mnd)</code></pre>
+<pre><code>## Joining, by = &quot;mnd&quot;</code></pre>
+<pre class="r"><code>ggplot(data = temp) +
+  geom_col(aes(x = fct_reorder(fordeltPaa, mnd), y = antall)) +
+  labs(x = &quot;Måned&quot;, y = &quot;Antall positive prøvesvar&quot;, title = &quot;Antall positive prøvesvar etter måned&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Hvilke kommuner hadde flest smittetilfeller i de ulike månedene?</p>
+<p>Fordelingsplot</p>
+<pre class="r"><code>#velger de fem øverste kommunene i hver måned
+temp = group_by(df_komplett, mnd) %&gt;%
+  slice_max(antall, n = 5, with_ties = FALSE) %&gt;%
+  arrange(mnd)
+
+ggplot(data = temp) + 
+  geom_col(aes(x = tidytext::reorder_within(knavn, desc(antall), mnd), y = antall)) +
+  tidytext::scale_x_reordered() +
+  facet_wrap(vars(mnd), scales = &quot;free&quot;) +
+  labs(x = &quot;kommune&quot;, y = &quot;antall påviste tilfeller&quot;, title = &quot;Antall påviste Covid-19-tilfeller etter kommune og måned&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-10-1.png" width="1056" /></p>
+<p>Som vi ser er smittetallene stort sett avhengige av folketall - Oslo ligger alltid øverst, og så kommer Bergen og Trondheiim inn på lista under, med diverse andre kommuner i samme område inn og ut av lista, særlig på Østlandsområdet. De ti kommunene med flest tilfeller, står for over 50 % av alle tilfeller - dette inkluderer Oslo, som står for 28 % av tilfellene.</p>
+<p>Noen kommuner har ikke hatt noen positive svar: Det er først og fremst snakk om Røyrvik, som står oppført med 0 positive svar fra januar til september. Så er det også 5 kommuner som det mangler informasjon for i 1 eller flere måneder - Utsira, Vevelstad, Skjerstad, Osen og Leka.</p>
+<pre class="r"><code>temp = group_by(df_komplett, knr) %&gt;%
+  summarise(antall = sum(antall, na.rm = TRUE)) %&gt;%
+  arrange(desc(antall)) %&gt;%
+  mutate(
+    har_tilfeller = ifelse(antall &gt; 0, TRUE, FALSE),
+    kum_andel = cumsum(antall) / sum(antall, na.rm = TRUE)
+    ) %&gt;%
+  left_join(., enhetsliste)</code></pre>
+<pre><code>## Joining, by = &quot;knr&quot;</code></pre>
+<pre class="r"><code>tabell = filter(temp, is.na(antall) | har_tilfeller == FALSE)
+
+knitr::kable(tabell)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">knr</th>
+<th align="right">antall</th>
+<th align="left">har_tilfeller</th>
+<th align="right">kum_andel</th>
+<th align="left">knavn</th>
+<th align="left">fnr</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1151</td>
+<td align="right">0</td>
+<td align="left">FALSE</td>
+<td align="right">1</td>
+<td align="left">Utsira</td>
+<td align="left">11</td>
+</tr>
+<tr class="even">
+<td align="left">1816</td>
+<td align="right">0</td>
+<td align="left">FALSE</td>
+<td align="right">1</td>
+<td align="left">Vevelstad</td>
+<td align="left">18</td>
+</tr>
+<tr class="odd">
+<td align="left">1842</td>
+<td align="right">0</td>
+<td align="left">FALSE</td>
+<td align="right">1</td>
+<td align="left">Skjerstad</td>
+<td align="left">18</td>
+</tr>
+<tr class="even">
+<td align="left">5020</td>
+<td align="right">0</td>
+<td align="left">FALSE</td>
+<td align="right">1</td>
+<td align="left">Osen</td>
+<td align="left">50</td>
+</tr>
+<tr class="odd">
+<td align="left">5043</td>
+<td align="right">0</td>
+<td align="left">FALSE</td>
+<td align="right">1</td>
+<td align="left">Røyrvik</td>
+<td align="left">50</td>
+</tr>
+<tr class="even">
+<td align="left">5052</td>
+<td align="right">0</td>
+<td align="left">FALSE</td>
+<td align="right">1</td>
+<td align="left">Leka</td>
+<td align="left">50</td>
+</tr>
+</tbody>
+</table>
+<p>Et forsøk på å se på fordelingene for hver måned, gir ikke så veldig mye utover å slå fast at fordelinga er veldig høyreskjeiv - de aller fleste kommunene har hatt et fåtall smittetilfeller. Hvis en skal få noe mer ut av disse dataene, bør en kanske se dem sammen med befolkningstall.</p>
+<pre class="r"><code>ggplot(data = df_komplett, aes(x = fordeltPaa, y = antall)) + 
+  geom_jitter(colour = &quot;steelblue&quot;, alpha = 0.3) + 
+  geom_boxplot(alpha = 0) </code></pre>
+<pre><code>## Warning: Removed 45 rows containing non-finite values (stat_boxplot).</code></pre>
+<pre><code>## Warning: Removed 45 rows containing missing values (geom_point).</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(data = df_komplett, aes(x = antall, y = fordeltPaa)) + 
+  geom_density_ridges(alpha = 0.7) + 
+  scale_x_continuous(limits = c(0, 105), expand = c(0,1)) + 
+  theme(axis.ticks.y = element_blank()) </code></pre>
+<pre><code>## Picking joint bandwidth of 2.25</code></pre>
+<pre><code>## Warning: Removed 281 rows containing non-finite values (stat_density_ridges).</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-12-2.png" width="672" /></p>
+</div>
