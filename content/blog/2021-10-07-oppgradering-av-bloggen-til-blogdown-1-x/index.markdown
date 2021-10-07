@@ -1,0 +1,36 @@
+---
+title: Oppgradering av bloggen til Blogdown 1.X
+author: Eivind
+date: '2021-10-07'
+slug: []
+categories: []
+tags: []
+meta_img: images/image.png
+description: Description for the page
+---
+
+__Hva handler dette om?__ _En mulig fornuftig arbeidsflyt for å bruke blogdown til å blogge med R_
+
+Siden mars 2019 har jeg vært godt fornøgd med å skrive en og anna blogg-artikkel i R (cirka 30 p.t.). For å få til dette har jeg brukt pakken [Blogdown](https://github.com/rstudio/blogdown#readme). Denne pakka gir meg muligheten til å skrive og ordne med bloggen min ved hjelp av Markdown og Hugo. I motsetning til f.eks. WordPress, er denne bloggen kun en samling med statiske nettsider, og ikke en database som må hostes på en spesifikk plattform. Dermed kan jeg laste opp filene til GitHub, og hoste dem på Netlify sin tjeneste som leser direkte fra GitHub. Men den største fordelen er at jeg kan skrive i r markdown, som bare er tekst - men som også kan inneholde r-kode.
+
+Når jeg tok i bruk pakken, var den i versjon 0.7 eller deromkring. Når jeg på våren 2021 oppdaterte R og alle R-pakkene mine, fant jeg imidlertid ut at pakka var oppgradert til versjon 1.0. Med en ny hovedversjon kom det en haug med endringer som gjorde at min gamle kode knakk sammen. Dermed måtte jeg grave meg ned i detaljene for å få bloggen tilbake på beina igjen. Alison Hill sin blogg om ["Up and running with blogdown in 2021"](https://www.apreshill.com/blog/2020-12-new-year-new-blogdown/) og [lanseringsnotatene](https://blog.rstudio.com/2021/01/18/blogdown-v1.0/) var til stor hjelp!
+
+Så hvordan gjorde jeg det?
+
+1. Sett et mål, og finn ut hvilket innhold du skal ha. Det blir avgjørende for hvordan du skal utforme sida. Jeg vil stort sett bare ha enkel tekst og noen figurer, så dermed vil jeg ha noe enkelt og oversiktlig, med få sider og lite navigasjon. Målet er vel ganske enkelt å legge noen halvtenkte tanker og kodesnutter på et sted jeg kan finne det igjen.
+
+2. Lag et prosjekt og sett opp versjonskontroll. Hill bruker den innebygde Git-kontrollen i RStudio. Den prøvde jeg å bruke, men jeg fikk den ikke til å fungere - og ikke bare fordi Git ikke er helt enkelt å forstå, men fordi det var en bug med synkroniseringen. Git-klienten er også av den enkle sorten. Dermed lagde jeg i stedet prosjektet i RStudio, og la denne mappa opp til GitHub via GitHub Desktop. Jeg ser at Jenny Bryan nå også anbefaler GitHub Desktop i sin flotte [Happy Git with R](https://happygitwithr.com/git-client.html)-bok. 
+
+3. Sett opp ei side. Dette kan du nå gjøre via funksjonen new_site fra blogdown-pakka. Her angir du temaet. Jeg gikk for [Tanka-temaet](https://themes.gohugo.io/themes/hugo-tanka/) (Tanka er forøvrig navnet på tradisjonell og enkel japansk poesi -"On the white sand | Of the beach of a small island | In the Eastern Sea. | I, my face streaked with tears, | Am playing with a crab). Her fant jeg også ut at for å få dette til å fungere skikkelig, så må jeg kjøre RStudio med administrator-tilganger. Uten den tilgangen, opprettes ikke alle de nødvendige filene. 
+
+4. Med den nye blogdown-pakka er det en rekke nye funksjoner og konfigurasjoner som en kan benytte seg av. Her kan en legge ting i RProfile-fila (som at filer ikke skal knittes automatisk ved lagring), redigere gitignore-fila for GitHub
+
+5. En anna sentral egenskap er at bloggartikler nå må "knittes" lokalt, før de lastes opp. I den gamle versjonen kunne en la Netlify håndtere "knittinga", men det ga store problemer med ukurante Hugo-versjoner m.m. Ved oppdatering ga det en ubehagelig overraskelse - når alle filene må knittes på nytt, så finner en jo utdatert R-kode, gamle R-pakker, API-endepunkter som har endra seg, og så videre. Claus Wilke beskriver dette problemet ganske godt i bloggen ["Writing a blogdown post for the ages"](https://clauswilke.com/blog/2020/09/08/a-blogdown-post-for-the-ages/). Den nye modellen i blogdown-pakka med at du selv knitter posten, og ikke re-knitter den når du laster opp sida på nytt, løser dette problemet - men i overgangen til versjon 1.0. var problemet over alt.
+
+6. En anna forskjell er at sidene nå lagres som "site bundles", der hver post har sin egen mappe med innholdet til den posten. Tidligere var innholdet lagret i en separat, felles mappe, noe som allerede med kun 30 poster ble uoversiktelig.
+
+7. Den siste forskjellen jeg har merka meg med, er at du nå kan merke innlegg som utkast ("draft") i headeren. Dermed publiseres de ikke. 
+
+8. En siste ting er at blogdown-pakka nå har fem  check-funksjoner, slik at en kan sjekke for en rekke vanlige feil og mangler med sideoppsettet, konfigurasjonsfiler, hugo-versjonerin, netlify-tilkobling og innholdet. Check_site() kjører belelig nok alt.
+
+Innholdet legges fortsatt på Github, og kan publiseres som ei nettside av Netlify derifra.
