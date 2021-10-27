@@ -1,0 +1,115 @@
+---
+title: penger
+author: Eivind
+date: '2021-10-27'
+slug: []
+categories: []
+tags: []
+meta_img: images/image.png
+description: Description for the page
+---
+
+__Hva handler denne artikkelen om?__ _Kan jeg spare litt penger ved å skifte strømforbruket til andre tider av døgnet?_ 
+
+
+```{r}
+library(tidyverse)
+library(janitor)
+library(readxl)
+
+#settings
+theme_set(theme_minimal())
+set.seed(1106)
+options(scipen = 100)
+```
+
+For å komme til bunns i dette starter jeg med å hente forbruksdataene for målepunktet fra [elhub.no](https://www.elhub.no/). 
+
+```{r}
+#data
+files= list.files(path = "data", pattern = "*.csv", full.names = TRUE) 
+df = map_df(files, read_delim, delim = ",", escape_double = FALSE,
+  skip = 1,
+  col_names = c("fra", "til", "forbruk"),
+  col_types = cols(
+    fra = col_datetime(format = "%d.%m.%Y %H:%M"), 
+    til = col_datetime(format = "%d.%m.%Y %H:%M")
+    ), 
+  locale = locale(decimal_mark = ",", grouping_mark = ""), 
+  trim_ws = TRUE)
+
+#tester om det finnes duplikater her
+duplikater = get_dupes(df, fra, til)
+rm(duplikater, files)
+
+#legger til informasjon om datoer
+
+df = mutate(df,
+  dato = as.Date(fra),
+  time = lubridate::hour(fra),
+  dag = lubridate::wday(fra, label = TRUE, abbr = FALSE),
+  ukedag = ifelse(dag %in% c("lørdag", "søndag"), "helg", "arbeidsdag"),
+  uke = lubridate::week(fra),
+  month = lubridate::month(fra),
+  natt = ifelse(time %in% c(23, 00, 01, 02, 03, 04, 05), "natt", "dag")
+)
+
+```
+
+# Hva koster det?
+
+Vi inngikk i slutten av juli en avtale med et strømselskap som gir meg et påslag - kanskje heller et avslag - på -0,5 øre pr. kWt. Strømavtalen følger markedsprisen på kraftbørsen Nord Pool, time for time, noe som normalt gir lave priser over tid. 
+
+Sist jeg kikket på dette, klarte jeg allikevel ikke å rekonstruere strømregninga mi. Denne gangen prøver jeg på nytt.
+
+- jeg laster ned strømprisene fra [Nord Pools nettside](https://www.nordpoolgroup.com/historical-market-data/).
+- prisene her oppgis i NOK pr megawatt-time. En vanligere enhet for strømpriser er øre per kilowatt-time. 1 megawatt er 1 000 kilowatt og 1 krone er 100 øre - altså må vi dele den oppgitte prisen på 10 for å få øre per kilowatt-time.
+- gjennom min strømavtale får jeg et avslag på 0,5 øre per kwt.
+- Nordpool-prisene er også oppgitt uten merverdiavgift. Mva. på strøm er 25 %. 
+
+```{r}
+
+#leser inn datasettet, endrer et variabelnavn, velger bare Bergen, lager nye fra-til-variabler for klokkeslett, og nye variabler med dato og klokkeslett på samme format som i forbruksdatasettet
+priser_2021 <- read_excel("data/elspot-prices_2021_hourly_nok.xlsx", skip = 2) %>%
+  rename(., dato = 1) %>%
+  select(dato, Hours, Bergen) %>%
+  separate(Hours, into = c("fra_kl", "til_kl")) %>%
+  mutate(fra_kl = paste0(fra_kl, ":00:00"),
+         til_kl = paste0(til_kl, ":00:00"),
+         fra = as.POSIXct(paste0(dato, " ", fra_kl), format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
+         til = as.POSIXct(paste0(dato, " ", til_kl), format = "%Y-%m-%d %H:%M:%S", tz = "UTC"),
+         ) %>%
+  mutate(spotpris_nordpool = Bergen/1000*100,
+         spotpris_eks_fratrekk = spotpris_nordpool -0.5,
+         spotpris_inkl_mva = spotpris_eks_fratrekk * 1.25
+         )
+
+temp = left_join(df, select(priser_2021, fra, spotpris_inkl_mva), by = "fra") %>%
+  mutate(kost = forbruk*spotpris_inkl_mva) %>%
+  group_by(month) %>%
+  summarise(forbruk = sum(forbruk),
+            kostnad_kr = round(sum(kost)/100,2)
+            )
+
+```
+
+Her lærte jeg også at POSIXct-objekter har tidssone som attributt, som left_join ser på.
+
+```{r}
+#stemmer summen av priser i det opprinnelige datasettet overens med det joina?
+
+checksum_1 = sum(filter(priser_2021, fra %in% df$fra)$Bergen)
+checksum_2 = left_join(df, select(priser_2021, fra, Bergen), by = "fra") %>%
+  summarise(Bergen = sum(Bergen))
+
+#ja
+
+#stemmer summen av priser på månedlig basis overens med samme summer i kilderegnearket?
+
+temp = left_join(df, select(priser_2021, fra, Bergen), by = "fra") %>%
+  group_by(month) %>%
+  summarise(sum_priser = sum(Bergen))
+
+#sammenlikner disse summene med tilsvarende summer funnet ved hjelp av PowerQuery i Excel. De stemmer overens for de tre månedene jeg også har fulle forbruksdata for.
+
+```
