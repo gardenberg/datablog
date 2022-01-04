@@ -103,6 +103,8 @@ ggplot(data = temp, aes(x = fra, y = forbruk)) +
 
 ```
 
+Her lærte jeg forøvrig også at POSIXct-objekter har tidssone som attributt, som left_join ser på.
+
 De fleste hendelsene kommer sammen med en stigning i forbruket, naturlig nok. Men for at dette skulle gitt mer mening, burde jeg nok ha notert litt mer - med kun 7 datapunkter blir det rett og slett litt fattig for å forstå alle svingningene. Jeg er heller ikke helt sikker på hva vi gjorde som utløste de store toppene rundt kl. 16.00 torsdag 14. oktober og kl. 8 søndag 17. oktober. Oppvarming i kombinasjon med matlaging og barne-TV på søndag?  
 
 # Men hva så? 
