@@ -1,0 +1,253 @@
+---
+title: "Når er det trygt å plante stiklinger ute?"
+author: Eivind
+date: '2022-02-05'
+slug: []
+categories: []
+tags: []
+meta_img: images/image.png
+description: Description for the page
+---
+
+__Hva handler dette om?__ _En kikk på dataene for å finne ut av når det offisielt er trygt å plante ut planter her i Bergen, sammenligna med Nes på Hedmarken. Det avhenger selvsagt av hvor risikovillig du er - men våren kommer først vestpå!_
+
+Våren kommer - snart? Akkurat nå føles det litt som å vente på bussen i Oslo en kald vinterdag mens Ruters sanntidssystem var under utprøving: alt du fikk beskjed om var "snart". Lenge. Heldigvis har vi data til å redde dagen. 
+
+Dette er basert på Jan Knappes kikk på [Eisheilligen](https://www.janknappe.com/blog/r-when-save-plant-seedlings-outside-ice-saints/?utm_source=pocket_mylist)-dagene i Tyskland, fra 12. - 15. mai. Nå er vi jo betraktelig mindre katolske her i Norge, og har etter hva jeg kan se ingen liknende helgendager på primstaven. Men en vanlig huskeregel på Østlandet har vært 17. mai - ikke plant ut noe før dette! 
+
+Dette er selvsagt langt mer komplisert - som f.eks. bloggen [moseplassen](https://moseplassen.no/2012/05/tips-om-nar-og-hvordan-du-bor-sette-ut-plantene/) gjør rede for, avhenger det av hva du skal plante, vind- og lysforhold i tillegg til temperatur, og gjerne en periode med tilvenning også.
+
+Men allikevel! La oss forenkle ting for folk med enkle tallhoder og lite grønne fingre. Hva skal vi gjøre?
+
+- Laste ned og importere historiske værdata fra Norsk klimaservicesenter
+- Finne datoen 
+- Lage en modell for siste dag med minusgrader (med en logit-modell)
+- Lage prediksjoner for når det vil være (hvor) trygt å plante utendørs.
+
+```{r, warning = FALSE, message = FALSE}
+
+#biblioteker
+library(tidyverse)
+library(lubridate)
+library(here)
+library(padr)
+library(gt)
+
+#settings
+
+old = theme_set(theme_minimal())
+```
+
+
+# Værdata for Bergen
+
+Meteorologisk institutt (MET) legger ut temperaturdata på sin portal [seklima.met.no](https://seklima.met.no/). Herifra er det mulig å laste ned mindre dataserier. Ut ifra stasjonsoversikten finner jeg 6 stasjoner i Bergensområdet: 
+
+- Pleiestiftelsen - i drift 1895 - 1940, 
+- Fredriksberg 1904 - 1985, 
+- Sandsli 504090 1982 - 2001, 
+- Sandsli 504080 1983 - nå, 
+- Florida 1949 - nå, 
+- Florida (UiB) 2003 - nå. 
+
+I første omgang tar jeg data fra Florida-stasjonen (id SN50540) fra 1957 til i dag - dette gir noe lengde på tidsserien, og er ikke alt for langt unna der vi bor. 
+
+Som sammenlikningsgrunnlag henter jeg også data fra Kise På Hedmark (stasjonsid SN12550), som har data fra 1951 til i dag. Målet med det er å kunne skryte til venner og kjente om hvor mye tidligere våren begynner her på vestlandet. En nobelt mål! Jeg begynner dataserien også derifra i 1957.
+
+Her innfører vi også en mulig feilkilde: Temperaturen er forskjellig to meter over bakken (hvor temperaturmålingene gjøres), og på bakkenivå (der plantene befinner seg), noe [denne artikkelen på yr.no](https://www.yr.no/artikkel/sjekk-nar-varens-siste-frostnatt-er-1.8117457)) påpeker.
+
+Jeg velger å laste ned minimumstemperatur pr. døgn for første halvår (fram til og med 1. juli) for perioden 1957-2021. Så lager jeg noen varianter av dato-variabelen (år, dag), og en variabel som indikerer om dagen var en frostdag:
+
+
+```{r}
+df <- read_delim(here("content/blog/2022-01-30-når-er-det-trygt-å-plante-stiklinger-ute/data/table.csv"),
+                    delim = ";", escape_double = FALSE, 
+                    col_types = cols(`Tid(norsk normaltid)` = col_date(format = "%d.%m.%Y")),
+                    locale = locale(decimal_mark = ",", grouping_mark = "|"),
+                    trim_ws = TRUE) %>%
+  rename(sted = 1, stasjonsid = 2, dato = 3, minimumstemperatur = 4)
+
+df = mutate(df,
+            frost = ifelse(minimumstemperatur < 0, TRUE, FALSE),
+            år = year(dato),
+            dagnr = yday(dato),
+            dag_måned = format(dato, "%d.%b")
+            )
+
+glimpse(df)
+
+```
+
+Dataene er komplette, og har kun med en NA på siste linja, der det ligger en beskjed om at "Data er gyldig per 01.02.2022 (CC BY 4.0), Meteorologisk institutt (MET)". Den linja er viktig, men kan fjernes.
+
+```{r, include = FALSE}
+df = filter(df, is.na(minimumstemperatur) == FALSE)
+```
+
+Dermed lar det seg lett gjøre å identifisere dagene som er de siste frostdagene på hvert sted, hvert år:
+
+```{r}
+df_siste_frostdager = group_by(df, sted, år) %>%
+  filter(frost == TRUE) %>%
+  filter(dagnr == max(dagnr)) %>%
+  mutate(dag_måned = as.Date(dagnr, origin = "0000-01-01"))
+```
+
+Hvordan ser disse dataene ut? La oss lage en figur! 
+
+For å få en fin fremstilling legger jeg også til en variabel dag_måned som gjør det lettere å plotte temperaturen mot dag og måned på en felles akse, og en horisontal linje på en mye brukt tommelfingerregel: 17. mai.
+
+```{r}
+ggplot(data = df_siste_frostdager) +
+  geom_line(aes(x = år, y = dag_måned, colour = sted)) +
+  scale_y_date(date_labels = "%d. %b") + 
+  geom_hline(aes(yintercept = as.Date("0000-05-17"))) +
+  labs(title = "Når er det trygt å plante ut?", subtitle = "Siste dag med minusgrader i Bergen og på Nes", 
+       x = "År", y = "Dag", colour = "Sted")
+``` 
+
+Her ser vi tydelig at Bergen går ut av vinteren og minusgrader tidligere enn Nes og Kise. 17. mai er stort sett en grei dato for Nes, med enkelte kalde unntak - sist i 2020. For Bergen ser den greie datoen ut til å ligge nærmere 1. mai.
+
+## Frekvenser og sannsynligheter 
+
+Så går vi over til sannsynligheter. Vi har settet med de siste frostdagene, og kan bruke dette til å telle opp og beregne (for hvert sted) hvor hyppig eller sannsynlig det er at en gitt dato er den siste frostdagen. Sagt på en annen måte - for hver enkelt dato, hvor ofte har vi i løpet av de 64 siste årene observert at det var den siste frostdagen?
+
+```{r}
+
+#først lager jeg et riktig datasett
+#det har kun dagene med frost
+
+df_siste_frost_sannsynlighet = 
+  #beregner kumulativ sannsynlighet for at siste frostdag er forbi
+  group_by(df_siste_frostdager, sted, dag_måned) %>%
+  summarise(prob_abs = n()) %>%
+  mutate(prob_rel = prob_abs / sum(prob_abs),
+         prob_cum = cumsum(prob_rel)
+         ) %>%
+  ungroup() %>%
+  #lag fullstendig datasett med felles slutt og start
+  complete(sted, dag_måned) %>%
+  #fyller inn manglende datoer med padr::pad
+  group_by(sted) %>%
+  pad(interval = "day") %>%
+  #setter start og slutt for prob_cum til 0, 1
+  mutate(prob_cum = ifelse(dag_måned == min(dag_måned) & is.na(prob_cum), 0, prob_cum),
+           prob_cum = ifelse(dag_måned == max(dag_måned) & is.na(prob_cum), 1, prob_cum)) %>%
+  ungroup() %>%
+  mutate(dagnr = lubridate::yday(dag_måned))
+  
+```
+
+Dette kan vi plotte som en figur:
+
+```{r}
+ggplot(data = df_siste_frost_sannsynlighet) +
+  geom_point(aes(x = dag_måned, y = prob_cum, colour = sted)) + 
+  geom_vline(aes(xintercept = as.Date("0000-05-17"))) +
+  labs(title = "Når er det trygt å plante ut stiklinger?", subtitle = "Sannsynlighet for at siste frost-dag er forbi", colour = "Sted", x = "Dag", y = "Sannsynlighet", caption = "Data: Norsk klimaservicesenter")
+```
+
+For å forstå sammenhengen bedre, og kunne si noe om sannsynligheten på hver enkelt dag - ikke kun dagene vi har observasjoner for - så må vi  oppsummere disse observasjonene med en modell. Dette er en modell som oppsummerer de eksisterende observasjonene, vi gjør ingen prediksjoner eller estimater for fremtidig temperatur her.
+
+```{r}
+#definer logit-function 
+logit_model  = function(df) {
+    glm(prob_cum ~ dag_måned, 
+        data = df, 
+        family = binomial(logit))
+}
+
+#lag en data-range med datoer for modellen
+fit_dates =
+    tibble(dag_måned = 
+               seq.Date(from = as.Date("0000-01-01"), 
+                        to = as.Date("0000-07-01"), 
+                        by = 1))
+
+#fitter modellen og henter ut predikerte verdier for dag_måned
+siste_frost_model =
+    df_siste_frost_sannsynlighet %>%
+    # velg relevante kolonner
+    select(sted, prob_cum, dag_måned) %>%
+    # nest data etter sted
+    group_by(sted) %>%
+    nest() %>%
+    # kjør logit-model and prediker det på den valgte dato-rangen
+    mutate(model = map(data, logit_model)) %>%
+    mutate(fit = map(model, predict, type = "response", newdata = fit_dates)) %>%
+    unnest(fit) %>%
+    select(sted, fit) %>%
+    # add prediction date range
+    mutate(dag_måned = fit_dates$dag_måned) %>%
+    # add original prob_cum column
+    left_join(df_siste_frost_sannsynlighet %>%
+                  select(sted, dag_måned, prob_cum),
+              by = c("sted", "dag_måned"))
+
+#får en interessant feil her - når jeg mapper modellen til data, får jeg i non-integer #successes in a binomial glm!
+
+```
+
+
+
+
+```{r}
+ggplot(data = df_siste_frost_sannsynlighet) +
+  geom_point(aes(x = dag_måned, y = prob_cum, colour = sted)) + 
+  geom_smooth(aes(x = dag_måned, y = prob_cum, colour = sted), alpha = 0.15, method = "glm", 
+              method.args = list(family = binomial(logit))) +
+  labs(title = "Når er det trygt å plante ut stiklinger?", subtitle = "Sannsynlighet for at siste frost-dag er forbi", colour = "Sted", x = "Dag", y = "Sannsynlighet", caption = "Data: Norsk klimaservicesenter")
+```
+
+Som vi ser av modellen passer den ikke 100 % med observasjonene, men følger kurven sånn nokenlunde.
+
+Hvilke mer presise råd om planting kan vi så bruke denne modellen til å lage?
+
+```{r}
+prob_table = 
+    siste_frost_model %>%
+    group_by(sted) %>%
+    mutate(over_50 = fit >= 0.5,
+           over_90 = fit >= 0.9,
+           over_95 = fit >= 0.95,
+           over_98 = fit >= 0.98,
+           over_99 = fit >= 0.99) %>%
+    ungroup() %>%
+    select(sted, dag_måned, starts_with("over")) %>%
+    gather(key = prob,
+           value = response,
+           starts_with("over")) %>%
+    filter(response) %>%
+    group_by(sted, prob) %>%
+    summarise(threshold = min(dag_måned)) %>%
+    ungroup() %>%
+    mutate(prob = str_remove(prob, "over_") %>%
+               as.numeric() %>%
+               magrittr::divide_by(100)) %>%
+    spread(key = sted, 
+           value = threshold) %>%
+    mutate(explainer = paste0("du kan forvente minusgrader etter denne datoen en gang hvert ", round(1/(1-prob), 0), " år"))
+
+```
+
+Dette kan vi lage en tabell av!
+
+```{r, echo = FALSE}
+gt(prob_table, locale = "nb_NO") %>%
+    tab_header(title =  md("**Når er det trygt å plante ut?**"),
+               subtitle = "Sannsynlighet for at den siste frostdagen er forbi") %>%
+    opt_align_table_header(align = "left") %>%
+    tab_spanner(label = "Sted",
+                columns = vars("Bergen - Florida", "Kise Pa Hedmark")) %>%
+    cols_label(prob = "Sannsynlighet",
+               explainer = "") %>%
+    fmt_percent(columns = vars(prob),
+                decimals = 0) %>%
+    fmt_date(columns = vars("Bergen - Florida", "Kise Pa Hedmark"),
+             date_style = 9) %>%
+    cols_align(align = "center",
+               columns = everything())
+
+```
+
+
