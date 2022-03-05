@@ -1,0 +1,671 @@
+---
+title: 'Når er det trygt å plante stiklinger ute?'
+author: Eivind
+date: '2022-03-05'
+slug: []
+categories: []
+tags:
+  - one tag
+  - another tag
+meta_img: images/image.png
+description: Description for the page
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+
+<p><strong>Hva handler dette om?</strong> <em>En kikk på dataene for å finne ut av når det offisielt er trygt å plante ut planter her i Bergen, sammenligna med Nes på Hedmarken. Det avhenger selvsagt av hvor risikovillig du er - men våren kommer først vestpå!</em></p>
+<p>Våren kommer - snart? Akkurat nå føles det litt som å vente på bussen i Oslo en kald vinterdag mens Ruters sanntidssystem var under utprøving: alt du fikk beskjed om var “snart”. Lenge. Heldigvis har vi data til å redde dagen.</p>
+<p>Dette er basert på Jan Knappes kikk på <a href="https://www.janknappe.com/blog/r-when-save-plant-seedlings-outside-ice-saints/?utm_source=pocket_mylist">Eisheilligen</a>-dagene i Tyskland, fra 12. - 15. mai. Nå er vi jo betraktelig mindre katolske her i Norge, og har etter hva jeg kan se ingen liknende helgendager på primstaven. Men en vanlig huskeregel på Østlandet har vært 17. mai - ikke plant ut noe før dette!</p>
+<p>Dette er selvsagt langt mer komplisert - som f.eks. bloggen <a href="https://moseplassen.no/2012/05/tips-om-nar-og-hvordan-du-bor-sette-ut-plantene/">moseplassen</a> gjør rede for, avhenger det av hva du skal plante, vind- og lysforhold i tillegg til temperatur, og gjerne en periode med tilvenning også.</p>
+<p>Men allikevel! La oss forenkle ting for folk med enkle tallhoder og lite grønne fingre. Hva skal vi gjøre?</p>
+<ul>
+<li>Laste ned og importere historiske værdata fra Norsk klimaservicesenter</li>
+<li>Finne datoen</li>
+<li>Lage en modell for siste dag med minusgrader (med en logit-modell)</li>
+<li>Lage prediksjoner for når det vil være (hvor) trygt å plante utendørs.</li>
+</ul>
+<pre class="r"><code>#biblioteker
+library(tidyverse)
+library(lubridate)
+library(here)
+library(padr)
+library(gt)
+
+#settings
+
+old = theme_set(theme_minimal())</code></pre>
+<div id="værdata-for-bergen" class="section level1">
+<h1>Værdata for Bergen</h1>
+<p>Meteorologisk institutt (MET) legger ut temperaturdata på sin portal <a href="https://seklima.met.no/">seklima.met.no</a>. Herifra er det mulig å laste ned mindre dataserier. Ut ifra stasjonsoversikten finner jeg 6 stasjoner i Bergensområdet:</p>
+<ul>
+<li>Pleiestiftelsen - i drift 1895 - 1940,</li>
+<li>Fredriksberg 1904 - 1985,</li>
+<li>Sandsli 504090 1982 - 2001,</li>
+<li>Sandsli 504080 1983 - nå,</li>
+<li>Florida 1949 - nå,</li>
+<li>Florida (UiB) 2003 - nå.</li>
+</ul>
+<p>I første omgang tar jeg data fra Florida-stasjonen (id SN50540) fra 1957 til i dag - dette gir noe lengde på tidsserien, og er ikke alt for langt unna der vi bor.</p>
+<p>Som sammenlikningsgrunnlag henter jeg også data fra Kise På Hedmark (stasjonsid SN12550), som har data fra 1951 til i dag. Målet med det er å kunne skryte til venner og kjente om hvor mye tidligere våren begynner her på vestlandet. En nobelt mål! Jeg begynner dataserien også derifra i 1957.</p>
+<p>Her innfører vi også en mulig feilkilde: Temperaturen er forskjellig to meter over bakken (hvor temperaturmålingene gjøres), og på bakkenivå (der plantene befinner seg), noe <a href="https://www.yr.no/artikkel/sjekk-nar-varens-siste-frostnatt-er-1.8117457">denne artikkelen på yr.no</a>) påpeker.</p>
+<p>Jeg velger å laste ned minimumstemperatur pr. døgn for første halvår (fram til og med 1. juli) for perioden 1957-2021. Så lager jeg noen varianter av dato-variabelen (år, dag), og en variabel som indikerer om dagen var en frostdag:</p>
+<pre class="r"><code>df &lt;- read_delim(here(&quot;content/blog/2022-01-30-når-er-det-trygt-å-plante-stiklinger-ute/data/table.csv&quot;),
+                    delim = &quot;;&quot;, escape_double = FALSE, 
+                    col_types = cols(`Tid(norsk normaltid)` = col_date(format = &quot;%d.%m.%Y&quot;)),
+                    locale = locale(decimal_mark = &quot;,&quot;, grouping_mark = &quot;|&quot;),
+                    trim_ws = TRUE) %&gt;%
+  rename(sted = 1, stasjonsid = 2, dato = 3, minimumstemperatur = 4)
+
+df = mutate(df,
+            frost = ifelse(minimumstemperatur &lt; 0, TRUE, FALSE),
+            år = year(dato),
+            dagnr = yday(dato),
+            dag_måned = format(dato, &quot;%d.%b&quot;)
+            )
+
+glimpse(df)</code></pre>
+<pre><code>## Rows: 22,234
+## Columns: 8
+## $ sted               &lt;chr&gt; &quot;Kise Pa Hedmark&quot;, &quot;Kise Pa Hedmark&quot;, &quot;Kise Pa Hedm~
+## $ stasjonsid         &lt;chr&gt; &quot;SN12550&quot;, &quot;SN12550&quot;, &quot;SN12550&quot;, &quot;SN12550&quot;, &quot;SN1255~
+## $ dato               &lt;date&gt; 1957-01-01, 1957-01-02, 1957-01-03, 1957-01-04, 19~
+## $ minimumstemperatur &lt;dbl&gt; -6.3, -9.6, -13.0, -12.0, -5.0, -2.6, -7.6, -2.9, 3~
+## $ frost              &lt;lgl&gt; TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FAL~
+## $ år                 &lt;dbl&gt; 1957, 1957, 1957, 1957, 1957, 1957, 1957, 1957, 195~
+## $ dagnr              &lt;dbl&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, ~
+## $ dag_måned          &lt;chr&gt; &quot;01.jan&quot;, &quot;02.jan&quot;, &quot;03.jan&quot;, &quot;04.jan&quot;, &quot;05.jan&quot;, &quot;~</code></pre>
+<p>Dataene er komplette, og har kun med en NA på siste linja, der det ligger en beskjed om at “Data er gyldig per 01.02.2022 (CC BY 4.0), Meteorologisk institutt (MET)”. Den linja er viktig, men kan fjernes.</p>
+<p>Dermed lar det seg lett gjøre å identifisere dagene som er de siste frostdagene på hvert sted, hvert år:</p>
+<pre class="r"><code>df_siste_frostdager = group_by(df, sted, år) %&gt;%
+  filter(frost == TRUE) %&gt;%
+  filter(dagnr == max(dagnr)) %&gt;%
+  mutate(dag_måned = as.Date(dagnr, origin = &quot;0000-01-01&quot;))</code></pre>
+<p>Hvordan ser disse dataene ut? La oss lage en figur!</p>
+<p>For å få en fin fremstilling legger jeg også til en variabel dag_måned som gjør det lettere å plotte temperaturen mot dag og måned på en felles akse, og en horisontal linje på en mye brukt tommelfingerregel: 17. mai.</p>
+<pre class="r"><code>ggplot(data = df_siste_frostdager) +
+  geom_line(aes(x = år, y = dag_måned, colour = sted)) +
+  scale_y_date(date_labels = &quot;%d. %b&quot;) + 
+  geom_hline(aes(yintercept = as.Date(&quot;0000-05-17&quot;))) +
+  labs(title = &quot;Når er det trygt å plante ut?&quot;, subtitle = &quot;Siste dag med minusgrader i Bergen og på Nes&quot;, 
+       x = &quot;År&quot;, y = &quot;Dag&quot;, colour = &quot;Sted&quot;)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Her ser vi tydelig at Bergen går ut av vinteren og minusgrader tidligere enn Nes og Kise. 17. mai er stort sett en grei dato for Nes, med enkelte kalde unntak - sist i 2020. For Bergen ser den greie datoen ut til å ligge nærmere 1. mai.</p>
+<div id="frekvenser-og-sannsynligheter" class="section level2">
+<h2>Frekvenser og sannsynligheter</h2>
+<p>Så går vi over til sannsynligheter. Vi har settet med de siste frostdagene, og kan bruke dette til å telle opp og beregne (for hvert sted) hvor hyppig eller sannsynlig det er at en gitt dato er den siste frostdagen. Sagt på en annen måte - for hver enkelt dato, hvor ofte har vi i løpet av de 64 siste årene observert at det var den siste frostdagen?</p>
+<pre class="r"><code>#først lager jeg et riktig datasett
+#det har kun dagene med frost
+
+df_siste_frost_sannsynlighet = 
+  #beregner kumulativ sannsynlighet for at siste frostdag er forbi
+  group_by(df_siste_frostdager, sted, dag_måned) %&gt;%
+  summarise(prob_abs = n()) %&gt;%
+  mutate(prob_rel = prob_abs / sum(prob_abs),
+         prob_cum = cumsum(prob_rel)
+         ) %&gt;%
+  ungroup() %&gt;%
+  #lag fullstendig datasett med felles slutt og start
+  complete(sted, dag_måned) %&gt;%
+  #fyller inn manglende datoer med padr::pad
+  group_by(sted) %&gt;%
+  pad(interval = &quot;day&quot;) %&gt;%
+  #setter start og slutt for prob_cum til 0, 1
+  mutate(prob_cum = ifelse(dag_måned == min(dag_måned) &amp; is.na(prob_cum), 0, prob_cum),
+           prob_cum = ifelse(dag_måned == max(dag_måned) &amp; is.na(prob_cum), 1, prob_cum)) %&gt;%
+  ungroup() %&gt;%
+  mutate(dagnr = lubridate::yday(dag_måned))</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;sted&#39;. You can override using the
+## `.groups` argument.</code></pre>
+<p>Dette kan vi plotte som en figur:</p>
+<pre class="r"><code>ggplot(data = df_siste_frost_sannsynlighet) +
+  geom_point(aes(x = dag_måned, y = prob_cum, colour = sted)) + 
+  geom_vline(aes(xintercept = as.Date(&quot;0000-05-17&quot;))) +
+  labs(title = &quot;Når er det trygt å plante ut stiklinger?&quot;, subtitle = &quot;Sannsynlighet for at siste frost-dag er forbi&quot;, colour = &quot;Sted&quot;, x = &quot;Dag&quot;, y = &quot;Sannsynlighet&quot;, caption = &quot;Data: Norsk klimaservicesenter&quot;)</code></pre>
+<pre><code>## Warning: Removed 136 rows containing missing values (geom_point).</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>For å forstå sammenhengen bedre, og kunne si noe om sannsynligheten på hver enkelt dag - ikke kun dagene vi har observasjoner for - så må vi oppsummere disse observasjonene med en modell. Dette er en modell som oppsummerer de eksisterende observasjonene, vi gjør ingen prediksjoner eller estimater for fremtidig temperatur her.</p>
+<pre class="r"><code>#definer logit-function 
+logit_model  = function(df) {
+    glm(prob_cum ~ dag_måned, 
+        data = df, 
+        family = binomial(logit))
+}
+
+#lag en data-range med datoer for modellen
+fit_dates =
+    tibble(dag_måned = 
+               seq.Date(from = as.Date(&quot;0000-01-01&quot;), 
+                        to = as.Date(&quot;0000-07-01&quot;), 
+                        by = 1))
+
+#fitter modellen og henter ut predikerte verdier for dag_måned
+siste_frost_model =
+    df_siste_frost_sannsynlighet %&gt;%
+    # velg relevante kolonner
+    select(sted, prob_cum, dag_måned) %&gt;%
+    # nest data etter sted
+    group_by(sted) %&gt;%
+    nest() %&gt;%
+    # kjør logit-model and prediker det på den valgte dato-rangen
+    mutate(model = map(data, logit_model)) %&gt;%
+    mutate(fit = map(model, predict, type = &quot;response&quot;, newdata = fit_dates)) %&gt;%
+    unnest(fit) %&gt;%
+    select(sted, fit) %&gt;%
+    # add prediction date range
+    mutate(dag_måned = fit_dates$dag_måned) %&gt;%
+    # add original prob_cum column
+    left_join(df_siste_frost_sannsynlighet %&gt;%
+                  select(sted, dag_måned, prob_cum),
+              by = c(&quot;sted&quot;, &quot;dag_måned&quot;))</code></pre>
+<pre><code>## Warning in eval(family$initialize): non-integer #successes in a binomial glm!
+
+## Warning in eval(family$initialize): non-integer #successes in a binomial glm!</code></pre>
+<pre class="r"><code>#får en interessant feil her - når jeg mapper modellen til data, får jeg i non-integer #successes in a binomial glm!</code></pre>
+<pre class="r"><code>ggplot(data = df_siste_frost_sannsynlighet) +
+  geom_point(aes(x = dag_måned, y = prob_cum, colour = sted)) + 
+  geom_smooth(aes(x = dag_måned, y = prob_cum, colour = sted), alpha = 0.15, method = &quot;glm&quot;, 
+              method.args = list(family = binomial(logit))) +
+  labs(title = &quot;Når er det trygt å plante ut stiklinger?&quot;, subtitle = &quot;Sannsynlighet for at siste frost-dag er forbi&quot;, colour = &quot;Sted&quot;, x = &quot;Dag&quot;, y = &quot;Sannsynlighet&quot;, caption = &quot;Data: Norsk klimaservicesenter&quot;)</code></pre>
+<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<pre><code>## Warning: Removed 136 rows containing non-finite values (stat_smooth).</code></pre>
+<pre><code>## Warning in eval(family$initialize): non-integer #successes in a binomial glm!
+
+## Warning in eval(family$initialize): non-integer #successes in a binomial glm!</code></pre>
+<pre><code>## Warning: Removed 136 rows containing missing values (geom_point).</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Som vi ser av modellen passer den ikke 100 % med observasjonene, men følger kurven sånn nokenlunde.</p>
+<p>Hvilke mer presise råd om planting kan vi så bruke denne modellen til å lage?</p>
+<pre class="r"><code>prob_table = 
+    siste_frost_model %&gt;%
+    group_by(sted) %&gt;%
+    mutate(over_50 = fit &gt;= 0.5,
+           over_90 = fit &gt;= 0.9,
+           over_95 = fit &gt;= 0.95,
+           over_98 = fit &gt;= 0.98,
+           over_99 = fit &gt;= 0.99) %&gt;%
+    ungroup() %&gt;%
+    select(sted, dag_måned, starts_with(&quot;over&quot;)) %&gt;%
+    gather(key = prob,
+           value = response,
+           starts_with(&quot;over&quot;)) %&gt;%
+    filter(response) %&gt;%
+    group_by(sted, prob) %&gt;%
+    summarise(threshold = min(dag_måned)) %&gt;%
+    ungroup() %&gt;%
+    mutate(prob = str_remove(prob, &quot;over_&quot;) %&gt;%
+               as.numeric() %&gt;%
+               magrittr::divide_by(100)) %&gt;%
+    spread(key = sted, 
+           value = threshold) %&gt;%
+    mutate(explainer = paste0(&quot;du kan forvente minusgrader etter denne datoen en gang hvert &quot;, round(1/(1-prob), 0), &quot; år&quot;))</code></pre>
+<pre><code>## `summarise()` has grouped output by &#39;sted&#39;. You can override using the
+## `.groups` argument.</code></pre>
+<p>Dette kan vi lage en tabell av!</p>
+<pre><code>## Warning: `columns = vars(...)` has been deprecated in gt 0.3.0:
+## * please use `columns = c(...)` instead
+
+## Warning: `columns = vars(...)` has been deprecated in gt 0.3.0:
+## * please use `columns = c(...)` instead
+
+## Warning: `columns = vars(...)` has been deprecated in gt 0.3.0:
+## * please use `columns = c(...)` instead
+
+## Warning: `columns = vars(...)` has been deprecated in gt 0.3.0:
+## * please use `columns = c(...)` instead
+
+## Warning: `columns = vars(...)` has been deprecated in gt 0.3.0:
+## * please use `columns = c(...)` instead</code></pre>
+<div id="zqxslqqoai" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', 'Fira Sans', 'Droid Sans', Arial, sans-serif;
+}
+
+#zqxslqqoai .gt_table {
+  display: table;
+  border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_heading {
+  background-color: #FFFFFF;
+  text-align: left;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#zqxslqqoai .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 0;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#zqxslqqoai .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#zqxslqqoai .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#zqxslqqoai .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#zqxslqqoai .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#zqxslqqoai .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#zqxslqqoai .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#zqxslqqoai .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#zqxslqqoai .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#zqxslqqoai .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#zqxslqqoai .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#zqxslqqoai .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zqxslqqoai .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#zqxslqqoai .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#zqxslqqoai .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zqxslqqoai .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#zqxslqqoai .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zqxslqqoai .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#zqxslqqoai .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zqxslqqoai .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#zqxslqqoai .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#zqxslqqoai .gt_left {
+  text-align: left;
+}
+
+#zqxslqqoai .gt_center {
+  text-align: center;
+}
+
+#zqxslqqoai .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#zqxslqqoai .gt_font_normal {
+  font-weight: normal;
+}
+
+#zqxslqqoai .gt_font_bold {
+  font-weight: bold;
+}
+
+#zqxslqqoai .gt_font_italic {
+  font-style: italic;
+}
+
+#zqxslqqoai .gt_super {
+  font-size: 65%;
+}
+
+#zqxslqqoai .gt_footnote_marks {
+  font-style: italic;
+  font-weight: normal;
+  font-size: 75%;
+  vertical-align: 0.4em;
+}
+
+#zqxslqqoai .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#zqxslqqoai .gt_slash_mark {
+  font-size: 0.7em;
+  line-height: 0.7em;
+  vertical-align: 0.15em;
+}
+
+#zqxslqqoai .gt_fraction_numerator {
+  font-size: 0.6em;
+  line-height: 0.6em;
+  vertical-align: 0.45em;
+}
+
+#zqxslqqoai .gt_fraction_denominator {
+  font-size: 0.6em;
+  line-height: 0.6em;
+  vertical-align: -0.05em;
+}
+</style>
+<table class="gt_table">
+  <thead class="gt_header">
+    <tr>
+      <th colspan="4" class="gt_heading gt_title gt_font_normal" style><strong>Når er det trygt å plante ut?</strong></th>
+    </tr>
+    <tr>
+      <th colspan="4" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style>Sannsynlighet for at den siste frostdagen er forbi</th>
+    </tr>
+  </thead>
+  <thead class="gt_col_headings">
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1">Sannsynlighet</th>
+      <th class="gt_center gt_columns_top_border gt_column_spanner_outer" rowspan="1" colspan="2">
+        <span class="gt_column_spanner">Sted</span>
+      </th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="2" colspan="1"></th>
+    </tr>
+    <tr>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Bergen - Florida</th>
+      <th class="gt_col_heading gt_columns_bottom_border gt_center" rowspan="1" colspan="1">Kise Pa Hedmark</th>
+    </tr>
+  </thead>
+  <tbody class="gt_table_body">
+    <tr><td class="gt_row gt_center">50%</td>
+<td class="gt_row gt_center">11 april</td>
+<td class="gt_row gt_center">8 mai</td>
+<td class="gt_row gt_center">du kan forvente minusgrader etter denne datoen en gang hvert 2 år</td></tr>
+    <tr><td class="gt_row gt_center">90%</td>
+<td class="gt_row gt_center">28 april</td>
+<td class="gt_row gt_center">22 mai</td>
+<td class="gt_row gt_center">du kan forvente minusgrader etter denne datoen en gang hvert 10 år</td></tr>
+    <tr><td class="gt_row gt_center">95%</td>
+<td class="gt_row gt_center">4 mai</td>
+<td class="gt_row gt_center">26 mai</td>
+<td class="gt_row gt_center">du kan forvente minusgrader etter denne datoen en gang hvert 20 år</td></tr>
+    <tr><td class="gt_row gt_center">98%</td>
+<td class="gt_row gt_center">11 mai</td>
+<td class="gt_row gt_center">1 juni</td>
+<td class="gt_row gt_center">du kan forvente minusgrader etter denne datoen en gang hvert 50 år</td></tr>
+    <tr><td class="gt_row gt_center">99%</td>
+<td class="gt_row gt_center">17 mai</td>
+<td class="gt_row gt_center">6 juni</td>
+<td class="gt_row gt_center">du kan forvente minusgrader etter denne datoen en gang hvert 100 år</td></tr>
+  </tbody>
+  
+  
+</table>
+</div>
+</div>
+</div>
