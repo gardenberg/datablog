@@ -1,0 +1,23 @@
+---
+title: "Dashboard for Age of Empires 2"
+author: Eivind
+date: '2022-04-09'
+slug: []
+categories: []
+tags:
+  - one tag
+  - another tag
+meta_img: images/image.png
+description: Description for the page
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+
+<p><strong>Hva handler dette om?</strong> <em>Hvordan kikke nærmere på litt for mange tap i Age of Empires 2?</em></p>
+<p>Gjennom pandemien har jeg gjennoppdaga et dataspill fra 1999: Age of Empires 2. Mens jeg i 1999 var mest opptatt av å kryste kampanjene, har jeg nå funnet ut at flerspiller-delen også er ganske gøy. En slags kombinasjon av hjernedød multitasking (“trykk på alle disse knappene samtidig for å holde imperiet i gang”), og fekte-aktig taktikk (“jeg har stein - du har papir - jeg bygger saks - gaa, stein i basen min”). Det er stas.</p>
+<p>Det som også er stas, er alle dataene en kan hente ut av spillene en har spilt. Ved hjelp av sider som <a href="www.aoe2.net">aoe2.net</a> og <a href="https://www.aoe2insights.com/https://www.aoe2insights.com/">aoe2insights.com</a> kan en få ut masse informasjon om spillene en har spilt.</p>
+<p>Datahenteflyten følger et kjent mønster: jeg skriver ned ID-ene til spillene laget mitt har spilt, og så slår jeg opp informasjon om spillene via API-ene til nettsidene. Mens aoe2.net gir informasjon om spillernes ELO-rating og resultatet av matchen, gir aoe2insights veldig detaljert informasjon om sivilisasjoner, handlinger per minutt, tidspunkt når en oppgraderer sivilisasjonen sin, og så videre.</p>
+<p>For å visualisere dette, tok jeg i bruk <a href="https://pkgs.rstudio.com/flexdashboard/index.html">Flexdashboard-pakken</a> - en interessant og temmelig enkel pakke for å lage dashboard ut av enkel markdown-syntaks. Ta en kikk!</p>
+<iframe class="flexdashboard" src="dashboard/dashboard_poc.html" style="height: 1070px; width: 720px">
+</iframe>

@@ -1,1 +1,6 @@
+
+
 - går det an å maskinelt gjennomgå lovforslag og stortingets endringer og merknader til disse? https://www.aftenposten.no/meninger/kronikk/i/v5ngAV/norges-lovgivere-sitter-ikke-bare-paa-stortinget
+- flexdashboard - med age-data eller løpedata?
+- konvertering fra adidas runner til strava?
+- board game geek-dataene
