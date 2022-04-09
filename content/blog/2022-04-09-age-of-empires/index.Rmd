@@ -21,5 +21,5 @@ Datahenteflyten følger et kjent mønster: jeg skriver ned ID-ene til spillene l
 
 For å visualisere dette, tok jeg i bruk [Flexdashboard-pakken](https://pkgs.rstudio.com/flexdashboard/index.html) - en interessant og temmelig enkel pakke for å lage dashboard ut av enkel markdown-syntaks. Ta en kikk!
 
-<iframe class="flexdashboard" src="dashboard/dashboard_poc.html" style = "height: 1070px; width: 720px"> </iframe>
+<iframe class="flexdashboard" src="dashboard/dashboard_poc.html"> </iframe>
 
