@@ -1,0 +1,30 @@
+---
+title: BGG
+author: Eivind
+date: '2022-04-26'
+slug: []
+categories: []
+tags:
+  - one tag
+  - another tag
+meta_img: images/image.png
+description: Description for the page
+---
+
+
+```{r}
+library(bggAnalytics) 
+#https://github.com/JakubBujnowicz/bggAnalytics
+```
+
+```{r}
+#fant ut at jeg måtte være innlogga
+#dette returnerer objekt-ider til eleemneter i samlinga
+min_samling = bggCollection$new(username = "Gardenberg")
+min_samling
+
+#med metodene fetch() eller expand() kan jeg hente data om disse spillene-
+#henter data, returnerer ei liste.
+liste = min_samling$fetch()
+```
+

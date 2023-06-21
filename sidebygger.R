@@ -35,7 +35,7 @@ serve_site()
 #ny post
 #unngå æ-ø-å i tittelen her
 new_post(
-  title = "Age of Empires",
+  title = "frivilligheten og integrering",
 )
 
 #stop server

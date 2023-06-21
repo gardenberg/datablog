@@ -4,3 +4,4 @@
 - flexdashboard - med age-data eller løpedata?
 - konvertering fra adidas runner til strava?
 - board game geek-dataene
+- nvivo-replikaen min
