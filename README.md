@@ -1,2 +1,2 @@
 # datablog
-Repo for min blogg
+Repo for min {blogdown]-blogg
